@@ -25,10 +25,16 @@ def atlas_registration(
     # File naming setup
     t1_name = os.path.basename(image_t1).split('.')[0]
     
+    # 0. ROBUST FOV (NECK CROP)
+    print(f"  [DEBUG 0/7] ROBUSTFOV: Removing neck tissue...")
+    t1_fov = os.path.join(output_dir, f"{t1_name}_cropped_fov.nii.gz")
+    rfov = fsl.RobustFOV(in_file=image_t1, out_roi=t1_fov, brainsize=180)
+    rfov.run()
+
     # 1. BRAIN EXTRACTION
     logger.debug(f"  [DEBUG 1/6] BET: Extracting brain...")
     t1_brain = os.path.join(output_dir, f"{t1_name}_BETted_brain.nii.gz")
-    bet = fsl.BET(in_file=image_t1, out_file=t1_brain, mask=True, frac=0.35)
+    bet = fsl.BET(in_file=t1_fov, out_file=t1_brain, mask=True, frac=0.4)
     bet.run()
 
     # 2. REORIENT TO STANDARD
