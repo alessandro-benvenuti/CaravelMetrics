@@ -19,6 +19,7 @@ ARGUMENTS:
     --output_folder  (optional) Path to save results. Default is './VESSEL METRICS'.
 """
 import argparse
+import logging
 import os
 from collections import defaultdict
 
@@ -35,6 +36,8 @@ import pickle
 import SimpleITK as sitk
 import vedo
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def load_label_map(txt_path):
@@ -348,7 +351,7 @@ def save_region_graphs(G, node_radius_map, region_nodes, output_folder, label_ma
         }
         with open(pkl_path, 'wb') as f:
             pickle.dump(region_package, f)
-        print(f"  -> Saved regional graph package: {pkl_path}")
+        logger.debug(f"  -> Saved regional graph package: {pkl_path}")
 
         if sub_G.number_of_edges() > 0:
             s_pts = [sub_G.nodes[u]['pos'] for u, v in sub_G.edges()]
@@ -357,14 +360,14 @@ def save_region_graphs(G, node_radius_map, region_nodes, output_folder, label_ma
             try:
                 region_lines = vedo.Lines(s_pts, e_pts).c('red').lw(3)
                 region_lines.write(region_vtp_path)
-                print(f"  -> Saved regional VTP: {region_vtp_path}")
+                logger.debug(f"  -> Saved regional VTP: {region_vtp_path}")
             except Exception as e:
-                print(f"  WARNING: failed to save regional VTP for region {region_id}: {e}")
+                logger.warning(f"  WARNING: failed to save regional VTP for region {region_id}: {e}")
 
 
 def save_results(results, output_folder, save_segment_masks, save_conn_comp_masks, label_map=None):
 
-    print("  Saving results...")
+    logger.debug("  Saving results...")
     general_keys = [
         'total_length', 'num_bifurcations', 'bifurcation_density', 'volume',
         'fractal_dimension', 'lacunarity',
@@ -378,7 +381,7 @@ def save_results(results, output_folder, save_segment_masks, save_conn_comp_mask
     if 'region_metrics' in results:
         region_results = results['region_metrics']
     else:
-        print("  No regional metrics found, saving global results only.")
+        logger.warning("  No regional metrics found, saving global results only.")
         region_results = {'global': results}
 
     for region_label, region_data in region_results.items():
@@ -477,7 +480,7 @@ def save_results(results, output_folder, save_segment_masks, save_conn_comp_mask
             by=['region_label', 'total_length'],
             ascending=[True, False]
         )
-        print("  Saving detailed per-region/component metrics...")
+        logger.debug("  Saving detailed per-region/component metrics...")
         df_detailed.to_csv(
             os.path.join(output_folder, 'all_components_by_region.csv'),
             index=False
@@ -532,7 +535,7 @@ def save_results(results, output_folder, save_segment_masks, save_conn_comp_mask
             index=False
         )
 
-    print(f"Results saved to: {output_folder}")
+    logger.debug(f"Results saved to: {output_folder}")
 
     
     
@@ -679,7 +682,7 @@ def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metric
         G = data['graph']
         node_radius_map = data['node_radius_map']
     except Exception as e:
-        print(f"  ERROR: Failed to load pickle - {e}")
+        logger.error(f"  ERROR: Failed to load pickle - {e}")
         return
     
     label_map = load_label_map(label_map_path)
@@ -706,7 +709,7 @@ def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metric
             
         for r_id in sorted(region_nodes.keys()):
             r_name = label_map.get(r_id, f"{r_id}")
-            #print(f"  Computing metrics for region {r_id} with {len(region_nodes[r_id])} nodes")
+            # logger.debug(f"  Computing metrics for region {r_id} with {len(region_nodes[r_id])} nodes")
             sub_G = G.subgraph(region_nodes[r_id]).copy()
             
             region_result = compute_metrics_for_mask(
@@ -718,7 +721,7 @@ def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metric
     
         # Saving regional VTP
         n_regions = len(region_nodes)
-        print(f"  Found {n_regions} regions. Generating regional VTP for {patient_name}...")
+        logger.debug(f"  Found {n_regions} regions. Generating regional VTP for {patient_name}...")
         regional_actors = []
         
         # Create directory for individual region VTPs
@@ -750,7 +753,7 @@ def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metric
                 individual_vtp_path = os.path.join(regions_vtp_dir, f"{region_name}.vtp")
                 region_lines.dataset.GetCellData().SetActiveScalars("RegionID")
                 region_lines.write(individual_vtp_path)
-                print(f"  -> Saved individual VTP for region {r_id} ({region_name}): {individual_vtp_path}")
+                logger.debug(f"  -> Saved individual VTP for region {r_id} ({region_name}): {individual_vtp_path}")
 
         if regional_actors:
             # Merge all regional line sets into one object
@@ -760,7 +763,7 @@ def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metric
             # Explicitly set RegionID as the active scalar for Slicer to read
             combined_vtp.dataset.GetCellData().SetActiveScalars("RegionID")
             combined_vtp.write(regional_vtp_path)
-            print(f"  -> Saved combined VTP with {n_regions} regions to: {regional_vtp_path}")
+            logger.debug(f"  -> Saved combined VTP with {n_regions} regions to: {regional_vtp_path}")
 
         save_region_graphs(G, node_radius_map, region_nodes, output_folder, label_map, patient_name=patient_name)
     
@@ -768,7 +771,7 @@ def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metric
     # NOT using atlas
     # ============================================================================    
     else:
-        print("  Computing global vessel metrics...")
+        logger.debug("  Computing global vessel metrics...")
         
         # Create a Results_GLOBAL folder
         parent, child = os.path.split(output_folder.rstrip('/'))

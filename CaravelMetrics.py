@@ -6,6 +6,7 @@ python3 CaravelMetrics.py \
     --t1-folder IXI/T1 \
     --output-folder Results \
     --atlas-path Atlas/Atlas_182_MNI152/ArterialAtlas.nii \
+    --mni-template Atlas/Atlas_182_MNI152/MNI152_T1_1mm_Brain.nii.gz \
     --label-map-path Atlas/ArterialAtlasLables.txt \
     --use-atlas
 '''
@@ -96,7 +97,7 @@ def ensure_atlas_available(atlas_path, atlas_zip_path):
             f"Also could not find expected zip archive: {atlas_zip_path}.\n" \
             "Please extract the atlas archive or set --atlas-path to a valid atlas file."
         )
-    print(f"Extracting atlas from {atlas_zip_path}...")
+    logger.debug(f"Extracting atlas from {atlas_zip_path}...")
     with zipfile.ZipFile(atlas_zip_path, 'r') as zf:
         zf.extractall(os.path.dirname(atlas_zip_path))
     if not os.path.exists(atlas_path):
@@ -104,7 +105,7 @@ def ensure_atlas_available(atlas_path, atlas_zip_path):
     return atlas_path
 
 
-def process_single_file(fname, image_folder, t1_image_folder, segmentation_folder, atlas_path, output_base_folder, skip_existing, use_atlas, label_map_path):
+def process_single_file(fname, image_folder, t1_image_folder, segmentation_folder, atlas_path, output_base_folder, skip_existing, use_atlas, label_map_path, mni_template_path):
     """Process a single segmentation file with comprehensive error handling"""
     
     try:
@@ -218,6 +219,7 @@ def main():
     parser.add_argument('--t1-folder', default=t1_image_folder, help='T1 image folder for atlas registration')
     parser.add_argument('--output-folder', default=output_base_folder, help='Base output folder')
     parser.add_argument('--atlas-path', default=atlas_path, help='Path to the atlas NIfTI file')
+    parser.add_argument('--mni-template', default=None, help='Path to the MNI152 T1 brain template')
     parser.add_argument('--atlas-zip', default=atlas_zip_path, help='Path to the atlas ZIP archive to extract if needed')
     parser.add_argument('--label-map-path', default=label_map_path, help='Path to the atlas label map text file')
     parser.add_argument('--use-atlas', dest='use_atlas', action='store_true', help='Enable atlas registration and region-based metrics')
@@ -225,6 +227,7 @@ def main():
     parser.set_defaults(use_atlas=False)
     parser.add_argument('--skip-existing', action='store_true', help='Skip processing if output files already exist')
     parser.add_argument('--no-parallel', action='store_true', help='Disable parallel processing')
+    parser.add_argument('--debug', action='store_true', help='Enable debug output and verbose logging')
     parser.add_argument('--num-workers', type=int, default=num_workers, help='Number of parallel workers')
     parser.add_argument('--chunk-size', type=int, default=chunk_size, help='Chunk size for parallel processing')
     args = parser.parse_args()
@@ -234,6 +237,7 @@ def main():
     t1_image_folder_arg = args.t1_folder
     output_base_folder_arg = args.output_folder
     atlas_path_arg = args.atlas_path
+    mni_template_arg = args.mni_template
     atlas_zip_path_arg = args.atlas_zip
     label_map_path_arg = args.label_map_path
     use_atlas_arg = args.use_atlas
@@ -241,6 +245,15 @@ def main():
     run_parallel_arg = not args.no_parallel
     num_workers_arg = args.num_workers
     chunk_size_arg = args.chunk_size
+    debug_mode = args.debug
+
+    if debug_mode:
+        logger.setLevel(logging.DEBUG)
+        logging.getLogger().setLevel(logging.DEBUG)
+        logger.debug('Debug mode enabled')
+    else:
+        logger.setLevel(logging.INFO)
+        logging.getLogger().setLevel(logging.INFO)
 
     if use_atlas_arg:
         atlas_path_arg = ensure_atlas_available(atlas_path_arg, atlas_zip_path_arg)
@@ -265,7 +278,8 @@ def main():
         output_base_folder=output_base_folder_arg,
         skip_existing=skip_existing_arg,
         use_atlas=use_atlas_arg,
-        label_map_path=label_map_path_arg
+        label_map_path=label_map_path_arg,
+        mni_template_path=mni_template_arg 
     )
     
     # Process files

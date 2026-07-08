@@ -1,8 +1,11 @@
+import logging
 import os
 import shutil
 import numpy as np
 import nibabel as nib
 from nipype.interfaces import fsl
+
+logger = logging.getLogger(__name__)
 
 def _fsl_available() -> bool:
     required_binaries = ["bet", "flirt", "convert_xfm", "fslreorient2std"]
@@ -23,20 +26,20 @@ def atlas_registration(
     t1_name = os.path.basename(image_t1).split('.')[0]
     
     # 1. BRAIN EXTRACTION
-    print(f"  [DEBUG 1/6] BET: Extracting brain...")
+    logger.debug(f"  [DEBUG 1/6] BET: Extracting brain...")
     t1_brain = os.path.join(output_dir, f"{t1_name}_BETted_brain.nii.gz")
-    bet = fsl.BET(in_file=image_t1, out_file=t1_brain, mask=True, frac=0.30)
+    bet = fsl.BET(in_file=image_t1, out_file=t1_brain, mask=True, frac=0.35)
     bet.run()
 
     # 2. REORIENT TO STANDARD
-    print(f"  [DEBUG 2/6] REORIENT: Aligning T1 orientation to standard...")
+    logger.debug(f"  [DEBUG 2/6] REORIENT: Aligning T1 orientation to standard...")
     t1_reoriented = os.path.join(output_dir, f"{t1_name}_Reoriented.nii.gz")
     reorient = fsl.Reorient2Std(in_file=t1_brain, out_file=t1_reoriented)
     reorient.run()
 
     # 3. T1 -> MRA (6-DOF)
     # We save the image here so you can check if T1 and MRA overlap correctly
-    print(f"  [DEBUG 3/6] FLIRT: Registering Subject T1 to Subject MRA...")
+    logger.debug(f"  [DEBUG 3/6] FLIRT: Registering Subject T1 to Subject MRA...")
     t1_in_mra_img = os.path.join(output_dir, f"{t1_name}_T1_in_MRA.nii.gz")
     t1_to_mra_mat = os.path.join(output_dir, "t1_to_mra.mat")
     
@@ -51,7 +54,7 @@ def atlas_registration(
 
     # 4. MNI -> T1 (12-DOF)
     # We save the image here to see if the MNI Template fits your patient's T1
-    print(f"  [DEBUG 4/6] FLIRT: Registering MNI Template to Subject T1...")
+    logger.debug(f"  [DEBUG 4/6] FLIRT: Registering MNI Template to Subject T1...")
     mni_in_t1_img = os.path.join(output_dir, f"{t1_name}_MNI_in_T1.nii.gz")
     mni_to_t1_mat = os.path.join(output_dir, "mni_to_t1.mat")
     
@@ -65,7 +68,7 @@ def atlas_registration(
     flirt_mni_t1.run()
 
     # 5. CONCATENATE MATRICES
-    print(f"  [DEBUG 5/6] CONVERT_XFM: Combining transforms (MNI -> T1 -> MRA)...")
+    logger.debug(f"  [DEBUG 5/6] CONVERT_XFM: Combining transforms (MNI -> T1 -> MRA)...")
     combined_mat = os.path.join(output_dir, "combined_mni_to_mra.mat")
     concat = fsl.ConvertXFM()
     concat.inputs.in_file = mni_to_t1_mat
@@ -75,7 +78,7 @@ def atlas_registration(
     concat.run()
 
     # 6. FINAL WARP: ATLAS -> MRA
-    print(f"  [DEBUG 6/6] APPLYXFM: Warping Atlas labels to MRA space...")
+    logger.debug(f"  [DEBUG 6/6] APPLYXFM: Warping Atlas labels to MRA space...")
     reg_atlas_path = os.path.join(output_dir, f"{t1_name}_registered_atlas.nii.gz")
     apply_xfm = fsl.ApplyXFM()
     apply_xfm.inputs.in_file = atlas_path
@@ -88,15 +91,19 @@ def atlas_registration(
 
     return reg_atlas_path
 
-def process_registration(image_path, image_t1_path, mask_path, atlas_path, output_dir):
-    # Check for the MNI template file
-    atlas_dir = os.path.dirname(atlas_path)
-    mni_template = os.path.join(atlas_dir, "MNI152_T1_1mm_brain.nii.gz")
-    
-    if not os.path.exists(mni_template):
-         mni_template = os.path.join(atlas_dir, "MNI152_T1_1mm_Brain.nii.gz")
+def process_registration(image_path, image_t1_path, mask_path, atlas_path, output_dir, mni_template_path=None):
+    # If no path was provided via CLI, use the default hardcoded guessing logic
+    if mni_template_path is None:
+        atlas_dir = os.path.dirname(atlas_path)
+        # Try both common casings
+        potential_path = os.path.join(atlas_dir, "MNI152_T1_1mm_brain.nii.gz")
+        if not os.path.exists(potential_path):
+            potential_path = os.path.join(atlas_dir, "MNI152_T1_1mm_Brain.nii.gz")
+        mni_template_path = potential_path
 
-    if not os.path.exists(mni_template):
-        raise FileNotFoundError(f"Missing MNI Template: {mni_template}")
+    # Final check
+    if not os.path.exists(mni_template_path):
+        raise FileNotFoundError(f"MNI Template not found at: {mni_template_path}")
 
-    atlas_registration(atlas_path, mni_template, image_path, image_t1_path, output_dir)
+    # Pass the confirmed path to the registration function
+    atlas_registration(atlas_path, mni_template_path, image_path, image_t1_path, output_dir)

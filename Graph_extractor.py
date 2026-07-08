@@ -1,3 +1,4 @@
+import logging
 import os
 import glob
 import pickle
@@ -10,6 +11,8 @@ from skimage.morphology import skeletonize
 from scipy.ndimage import distance_transform_edt, label, center_of_mass, map_coordinates
 from scipy.spatial import cKDTree
 from nibabel.affines import apply_affine
+
+logger = logging.getLogger(__name__)
 
 # =========================================================================
 #                               CONFIGURATION
@@ -71,21 +74,21 @@ def extract_graph(nifti_path, output_folder):
     Runs the full graph extraction and alignment pipeline for a single file.
     """
     case_name = os.path.basename(output_folder)
-    print(f"\n{'=' * 60}")
-    print(f"PROCESSING CASE: {case_name}")
-    print(f"File: {nifti_path}")
-    print(f"{'=' * 60}")
+    logger.debug('\n' + '=' * 60)
+    logger.debug(f'PROCESSING CASE: {case_name}')
+    logger.debug(f'File: {nifti_path}')
+    logger.debug('=' * 60)
 
     # Define output filenames
     output_pkl = os.path.join(output_folder, "vessel_data.pkl")
     output_vtp = os.path.join(output_folder, "vessel_graph.vtp")
     
     if os.path.exists(output_pkl):
-        print(f"  -> Output PKL already exists. Skipping case.")
+        logger.debug(f"  -> Output PKL already exists. Skipping case.")
         return
     
     # 1. LOAD DATA
-    print("  Loading NIFTI...")
+    logger.debug("  Loading NIFTI...")
     nii = nib.load(nifti_path)
     data = nii.get_fdata()
     affine = nii.affine
@@ -94,21 +97,21 @@ def extract_graph(nifti_path, output_folder):
     mean_voxel_size = np.mean(voxel_sizes)
 
     # 2. MESH GENERATION (Reference for Geodesic)
-    print("  Generating Reference Mesh...")
+    logger.debug("  Generating Reference Mesh...")
     vol = vedo.Volume(data)
     mesh = vol.isosurface(value=0.5)
     mesh.apply_transform(affine.tolist())
     mesh.clean()
 
     # 3. SKELETONIZATION
-    print("  Skeletonizing...")
+    logger.debug("  Skeletonizing...")
     skeleton_mask = skeletonize(data > 0)
     skel_indices = np.argwhere(skeleton_mask)
     skel_points_world = apply_affine(affine, skel_indices)
     full_dist_map_vox = distance_transform_edt(data > 0)
 
     # 4. ORPHAN HANDLING (UPDATED LOGIC)
-    print(f"  Handling Orphans (Threshold > {ORPHAN_DISTANCE_THRESHOLD})...")
+    logger.debug(f"  Handling Orphans (Threshold > {ORPHAN_DISTANCE_THRESHOLD})...")
     dist_to_skel = distance_transform_edt(~skeleton_mask, sampling=voxel_sizes)
     orphan_mask = (data > 0) & (dist_to_skel > ORPHAN_DISTANCE_THRESHOLD)
     labeled_orphans, num_zones = label(orphan_mask)
@@ -140,10 +143,10 @@ def extract_graph(nifti_path, output_folder):
             orphan_points_world = orphan_points_world[merged_indices]
         else:
             orphan_points_world = np.array([])
-        print(f"    Orphans kept after merge: {len(orphan_points_world)}")
+        logger.debug(f"    Orphans kept after merge: {len(orphan_points_world)}")
 
     # 5. BUILD GRAPH
-    print("  Building Graph...")
+    logger.debug("  Building Graph...")
     G = nx.Graph()
     for i, pt in enumerate(skel_points_world):
         G.add_node(i, pos=pt)
@@ -208,10 +211,10 @@ def extract_graph(nifti_path, output_folder):
                 nodes_to_remove.append(oid)
 
         G.remove_nodes_from(nodes_to_remove)
-        print(f"    Orphans removed (bridges/unconnected): {len(nodes_to_remove)}")
+        logger.debug(f"    Orphans removed (bridges/unconnected): {len(nodes_to_remove)}")
 
     # 6. PRUNING
-    print("  Pruning...")
+    logger.debug("  Pruning...")
     # Triangles
     for tri in [c for c in nx.enumerate_all_cliques(G) if len(c) == 3]:
         edges = [(tri[0], tri[1]), (tri[1], tri[2]), (tri[2], tri[0])]
@@ -242,21 +245,21 @@ def extract_graph(nifti_path, output_folder):
     G.remove_edges_from(edges_to_remove)
 
     # 6.5 FILTER SMALL COMPONENTS (NEW)
-    print(f"  Filtering Components < {MIN_COMPONENT_SIZE} nodes...")
+    logger.debug(f"  Filtering Components < {MIN_COMPONENT_SIZE} nodes...")
     initial_node_count = G.number_of_nodes()
     nodes_to_remove = []
     for component in nx.connected_components(G):
         if len(component) < MIN_COMPONENT_SIZE:
             nodes_to_remove.extend(list(component))
     G.remove_nodes_from(nodes_to_remove)
-    print(f"    Removed {len(nodes_to_remove)} nodes. (Graph size: {initial_node_count} -> {G.number_of_nodes()})")
+    logger.debug(f"    Removed {len(nodes_to_remove)} nodes. (Graph size: {initial_node_count} -> {G.number_of_nodes()})")
 
     # 7. SMOOTHING
-    print("  Smoothing...")
+    logger.debug("  Smoothing...")
     G = laplacian_smooth_graph(G, iterations=SMOOTH_ITERS, alpha=SMOOTH_ALPHA)
 
     # 8. APPLY ALIGNMENT (SLICER MATRIX)
-    print("  Applying Alignment Matrix...")
+    logger.debug("  Applying Alignment Matrix...")
     rotation = SLICER_MATRIX[:3, :3]
     translation = SLICER_MATRIX[:3, 3]
 
@@ -266,7 +269,7 @@ def extract_graph(nifti_path, output_folder):
         G.nodes[n]['pos'] = new_pos
 
     # 9. SAVE OUTPUTS
-    print("  Saving Results...")
+    logger.debug("  Saving Results...")
     node_radius_map = {}
     inv_slicer_rot = np.linalg.inv(rotation)
 
@@ -298,9 +301,9 @@ def extract_graph(nifti_path, output_folder):
     if s_pts:
         lines = vedo.Lines(s_pts, e_pts).c('green').lw(3)
         lines.write(output_vtp)
-        print(f"    -> Saved PKL: {output_pkl}")
-        print(f"    -> Saved VTP: {output_vtp}")
+        logger.debug(f"    -> Saved PKL: {output_pkl}")
+        logger.debug(f"    -> Saved VTP: {output_vtp}")
     else:
-        print("    ! Warning: Graph is empty, no VTP saved.")
+        logger.warning(f"    ! Warning: Graph is empty, no VTP {output_vtp} saved.")
 
-    print(f"  Done with {case_name}.\n")
+    logger.debug(f"  Done with {case_name}.\n")
