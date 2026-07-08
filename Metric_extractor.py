@@ -325,21 +325,25 @@ def extract_segments_from_component_using_shortest_path(G_comp, distance_map):
     return segment_lists, segment_counts_list
 
 
-def save_region_graphs(G, node_radius_map, region_nodes, output_folder, label_map):
+def save_region_graphs(G, node_radius_map, region_nodes, output_folder, label_map, patient_name=None):
     """Save one graph package and VTP per atlas region."""
-    regions_dir = os.path.join(output_folder, 'regional_graphs')
+    if patient_name is None:
+        patient_name = os.path.basename(os.path.normpath(output_folder))
+    regions_dir = os.path.join(output_folder, f"{patient_name}_regional_graphs")
     os.makedirs(regions_dir, exist_ok=True)
 
     for r_id, nodes in region_nodes.items():
-        region_name = label_map.get(int(r_id), f"region_{r_id}")
+        region_id = int(np.round(float(r_id)))
+        region_name = label_map.get(region_id, f"region_{region_id}")
         safe_region_name = region_name.replace(' ', '_').replace('/', '_')
-        sub_G = G.subgraph(nodes).copy()
+        base_name = f"{patient_name}_{safe_region_name}"
 
-        pkl_path = os.path.join(regions_dir, f"region_{r_id}_{safe_region_name}.pkl")
+        sub_G = G.subgraph(nodes).copy()
+        pkl_path = os.path.join(regions_dir, f"{base_name}.pkl")
         region_package = {
             'graph': sub_G,
             'node_radius_map': {n: node_radius_map[n] for n in sub_G.nodes()},
-            'region_id': int(r_id),
+            'region_id': region_id,
             'region_name': region_name
         }
         with open(pkl_path, 'wb') as f:
@@ -349,13 +353,13 @@ def save_region_graphs(G, node_radius_map, region_nodes, output_folder, label_ma
         if sub_G.number_of_edges() > 0:
             s_pts = [sub_G.nodes[u]['pos'] for u, v in sub_G.edges()]
             e_pts = [sub_G.nodes[v]['pos'] for u, v in sub_G.edges()]
-            region_vtp_path = os.path.join(regions_dir, f"region_{r_id}_{safe_region_name}.vtp")
+            region_vtp_path = os.path.join(regions_dir, f"{base_name}.vtp")
             try:
                 region_lines = vedo.Lines(s_pts, e_pts).c('red').lw(3)
                 region_lines.write(region_vtp_path)
                 print(f"  -> Saved regional VTP: {region_vtp_path}")
             except Exception as e:
-                print(f"  WARNING: failed to save regional VTP for region {r_id}: {e}")
+                print(f"  WARNING: failed to save regional VTP for region {region_id}: {e}")
 
 
 def save_results(results, output_folder, save_segment_masks, save_conn_comp_masks, label_map=None):
@@ -743,7 +747,7 @@ def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metric
                 
                 # Save individual region VTP
                 region_name = label_map.get(r_id, f"region_{r_id}")
-                individual_vtp_path = os.path.join(regions_vtp_dir, f"region_{r_id}_{region_name}.vtp")
+                individual_vtp_path = os.path.join(regions_vtp_dir, f"{region_name}.vtp")
                 region_lines.dataset.GetCellData().SetActiveScalars("RegionID")
                 region_lines.write(individual_vtp_path)
                 print(f"  -> Saved individual VTP for region {r_id} ({region_name}): {individual_vtp_path}")
@@ -758,7 +762,7 @@ def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metric
             combined_vtp.write(regional_vtp_path)
             print(f"  -> Saved combined VTP with {n_regions} regions to: {regional_vtp_path}")
 
-        save_region_graphs(G, node_radius_map, region_nodes, output_folder, label_map)
+        save_region_graphs(G, node_radius_map, region_nodes, output_folder, label_map, patient_name=patient_name)
     
     # ============================================================================    
     # NOT using atlas

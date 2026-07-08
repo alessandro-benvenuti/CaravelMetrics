@@ -1,3 +1,16 @@
+'''
+To run the script use:
+python3 CaravelMetrics.py \
+    --seg-folder IXI/masks \
+    --image-folder IXI/MRA \
+    --t1-folder IXI/T1 \
+    --output-folder Results \
+    --atlas-path Atlas/Atlas_182_MNI152/ArterialAtlas.nii \
+    --label-map-path Atlas/ArterialAtlasLables.txt \
+    --use-atlas
+'''
+
+
 import argparse
 import os
 import sys
