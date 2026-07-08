@@ -324,7 +324,41 @@ def extract_segments_from_component_using_shortest_path(G_comp, distance_map):
 
     return segment_lists, segment_counts_list
 
-def save_results(results, output_folder, save_segment_masks, save_conn_comp_masks):
+
+def save_region_graphs(G, node_radius_map, region_nodes, output_folder, label_map):
+    """Save one graph package and VTP per atlas region."""
+    regions_dir = os.path.join(output_folder, 'regional_graphs')
+    os.makedirs(regions_dir, exist_ok=True)
+
+    for r_id, nodes in region_nodes.items():
+        region_name = label_map.get(int(r_id), f"region_{r_id}")
+        safe_region_name = region_name.replace(' ', '_').replace('/', '_')
+        sub_G = G.subgraph(nodes).copy()
+
+        pkl_path = os.path.join(regions_dir, f"region_{r_id}_{safe_region_name}.pkl")
+        region_package = {
+            'graph': sub_G,
+            'node_radius_map': {n: node_radius_map[n] for n in sub_G.nodes()},
+            'region_id': int(r_id),
+            'region_name': region_name
+        }
+        with open(pkl_path, 'wb') as f:
+            pickle.dump(region_package, f)
+        print(f"  -> Saved regional graph package: {pkl_path}")
+
+        if sub_G.number_of_edges() > 0:
+            s_pts = [sub_G.nodes[u]['pos'] for u, v in sub_G.edges()]
+            e_pts = [sub_G.nodes[v]['pos'] for u, v in sub_G.edges()]
+            region_vtp_path = os.path.join(regions_dir, f"region_{r_id}_{safe_region_name}.vtp")
+            try:
+                region_lines = vedo.Lines(s_pts, e_pts).c('red').lw(3)
+                region_lines.write(region_vtp_path)
+                print(f"  -> Saved regional VTP: {region_vtp_path}")
+            except Exception as e:
+                print(f"  WARNING: failed to save regional VTP for region {r_id}: {e}")
+
+
+def save_results(results, output_folder, save_segment_masks, save_conn_comp_masks, label_map=None):
 
     print("  Saving results...")
     general_keys = [
@@ -360,12 +394,13 @@ def save_results(results, output_folder, save_segment_masks, save_conn_comp_mask
 
         for new_idx, (cid, data) in enumerate(sorted_items):
             comp_idx = new_idx + 1
-            region_name = f"Region_{region_label}"
-            comp_dir = os.path.join(output_folder, "regional_results" ,region_name, f"Conn_comp_{comp_idx}")
+            region_name = label_map.get(region_label, f"Region_{region_label}") if label_map else f"Region_{region_label}"
+            comp_dir = os.path.join(output_folder, "regional_results" ,region_name.replace(' ', '_'), f"Conn_comp_{comp_idx}")
             Path(comp_dir).mkdir(parents=True, exist_ok=True)
 
             row = {
                 'region_label': region_label,
+                'region_name': region_name,
                 'component_index': comp_idx,
                 'original_component_id': cid
             }
@@ -675,7 +710,7 @@ def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metric
             )
             results['region_metrics'][int(r_id)] = region_result
         
-        save_results(results, output_folder, save_segment_masks, save_conn_comp_masks)
+        save_results(results, output_folder, save_segment_masks, save_conn_comp_masks, label_map)
     
         # Saving regional VTP
         n_regions = len(region_nodes)
@@ -722,6 +757,8 @@ def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metric
             combined_vtp.dataset.GetCellData().SetActiveScalars("RegionID")
             combined_vtp.write(regional_vtp_path)
             print(f"  -> Saved combined VTP with {n_regions} regions to: {regional_vtp_path}")
+
+        save_region_graphs(G, node_radius_map, region_nodes, output_folder, label_map)
     
     # ============================================================================    
     # NOT using atlas

@@ -96,7 +96,8 @@ def extract_graph(nifti_path, output_folder):
     # 2. MESH GENERATION (Reference for Geodesic)
     print("  Generating Reference Mesh...")
     vol = vedo.Volume(data)
-    mesh = vol.isosurface(value=0.5).apply_transform(affine)
+    mesh = vol.isosurface(value=0.5)
+    mesh.apply_transform(affine.tolist())
     mesh.clean()
 
     # 3. SKELETONIZATION

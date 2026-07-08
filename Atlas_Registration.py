@@ -1,220 +1,102 @@
 import os
+import shutil
 import numpy as np
 import nibabel as nib
 from nipype.interfaces import fsl
 
+def _fsl_available() -> bool:
+    required_binaries = ["bet", "flirt", "convert_xfm", "fslreorient2std"]
+    return all(shutil.which(binary) for binary in required_binaries)
 
 def atlas_registration(
     atlas_path: str,
-    arr_seg: np.ndarray,
-    image_path: str,
-    image_t1: str,
+    mni_template_path: str,
+    image_path: str,      # MRA
+    image_t1: str,        # T1
     output_dir: str = "."
 ) -> str:
-    """
-    Register an atlas to T1-weighted MRI in MRA space using FSL FLIRT.
-
-    Performs a multistep registration pipeline:
-    1. Crops and extracts T1 brain using BET
-    2. Resamples T1 to MRA space
-    3. Registers atlas mask to T1 for initial alignment
-    4. Registers full atlas using mask alignment as initialisation
-
-    Parameters
-    ----------
-    atlas_path : str or Path
-        Path to the atlas NIfTI file (.nii or .nii.gz) to be registered.
-        Atlas should contain labelled regions or probability maps.
-    arr_seg : np.ndarray
-        Segmentation array (3D volume) used for preprocessing. Shape (H, W, D).
-        Values are rounded to integers. Currently used for validation but not
-        directly in the registration pipeline.
-    image_path : str or Path
-        Path to the reference MRA image (.nii or .nii.gz) defining target space.
-        T1 will be resampled to this space before atlas registration.
-    image_t1 : str or Path
-        Path to the T1-weighted MRI image (.nii or .nii.gz) to register atlas to.
-        This image will be cropped, skull-stripped, and resampled to MRA space.
-    output_dir : str or Path, optional
-        Directory where all intermediate and final outputs will be saved.
-        Default is the current directory. Directory must exist or be creatable.
-
-    Returns
-    -------
-    str
-        Path to the registered atlas file in MRA space
-        (filename: {T1_name}_registered_atlas.nii.gz).
-    """
-    # Round and cast to integer
-    print(f"Registering atlas: {atlas_path} to T1: {image_t1} in MRA space: {image_path}")
-    assert os.path.exists(atlas_path), f"Atlas file not found: {atlas_path}"
-    assert os.path.exists(image_path), f"MRA image file not found: {image_path}"
-    assert os.path.exists(image_t1), f"T1 image file not found: {image_t1}"
     
-    arr_seg = np.round(arr_seg).astype(int)
-    print(np.max(arr_seg))
+    if not _fsl_available():
+        raise RuntimeError("FSL is not installed or not in PATH.")
 
-    # Map values: 1 → 0, 2 → 1, everything else → 0
-    # arr_seg = np.where(arr == 1, 0, np.where(arr_seg == 2, 1, 0)).astype(int)
-    print(np.max(arr_seg))
-
-    image_t1_name = os.path.basename(image_t1).split('.')[0]
-
-    # Paths for outputs
-    reg_atlas_path = os.path.join(output_dir, f"{image_t1_name}_registered_atlas.nii.gz")
-    atlas_no_brain_mask = os.path.join(output_dir, f"{image_t1_name}_atlas_no_brain_mask.nii.gz")
-    image_path_no_brain = os.path.join(output_dir, f"{image_t1_name}_brain.nii.gz")
-    cropped_path = os.path.join(output_dir, f"{image_t1_name}_cropped.nii.gz")
-    T1_in_MRA_path = os.path.join(output_dir, f"{image_t1_name}_in_MRA.nii.gz")
-
-    # ============================================================================
-    # 1. Extract and prepare T1 brain
-    # ============================================================================
-
-    # Crop T1
-    fsl_roi = fsl.ExtractROI()
-    fsl_roi.inputs.in_file = image_t1  # Use original image_T1
-    fsl_roi.inputs.t_min = 0
-    fsl_roi.inputs.t_size = -1
-    fsl_roi.inputs.x_min = 0
-    fsl_roi.inputs.x_size = -1
-    fsl_roi.inputs.y_min = 50
-    fsl_roi.inputs.y_size = -1
-    fsl_roi.inputs.z_min = 0
-    fsl_roi.inputs.z_size = -1
-    result = fsl_roi.run()
-    cropped_file = result.outputs.roi_file
-    import shutil
-    shutil.move(cropped_file, cropped_path)
-
-    # Extract T1 brain with BET
-    bet = fsl.BET()
-    bet.inputs.in_file = cropped_path
-    bet.inputs.mask = True
-    bet.inputs.frac = 0.30
-    bet.inputs.vertical_gradient = 0.0
-    bet.inputs.out_file = image_path_no_brain
+    # File naming setup
+    t1_name = os.path.basename(image_t1).split('.')[0]
+    
+    # 1. BRAIN EXTRACTION
+    print(f"  [DEBUG 1/6] BET: Extracting brain...")
+    t1_brain = os.path.join(output_dir, f"{t1_name}_BETted_brain.nii.gz")
+    bet = fsl.BET(in_file=image_t1, out_file=t1_brain, mask=True, frac=0.30)
     bet.run()
 
-    # Reorient T1 to the standard
-    reorient = fsl.Reorient2Std()
-    reorient.inputs.in_file = image_path_no_brain
-    reorient.inputs.out_file = image_path_no_brain
+    # 2. REORIENT TO STANDARD
+    print(f"  [DEBUG 2/6] REORIENT: Aligning T1 orientation to standard...")
+    t1_reoriented = os.path.join(output_dir, f"{t1_name}_Reoriented.nii.gz")
+    reorient = fsl.Reorient2Std(in_file=t1_brain, out_file=t1_reoriented)
     reorient.run()
 
-    # ============================================================================
-    # 2. Resample T1 to MRA space
-    # ============================================================================
+    # 3. T1 -> MRA (6-DOF)
+    # We save the image here so you can check if T1 and MRA overlap correctly
+    print(f"  [DEBUG 3/6] FLIRT: Registering Subject T1 to Subject MRA...")
+    t1_in_mra_img = os.path.join(output_dir, f"{t1_name}_T1_in_MRA.nii.gz")
+    t1_to_mra_mat = os.path.join(output_dir, "t1_to_mra.mat")
+    
+    flirt_t1_mra = fsl.FLIRT()
+    flirt_t1_mra.inputs.in_file = t1_reoriented
+    flirt_t1_mra.inputs.reference = image_path
+    flirt_t1_mra.inputs.out_file = t1_in_mra_img
+    flirt_t1_mra.inputs.out_matrix_file = t1_to_mra_mat 
+    flirt_t1_mra.inputs.dof = 6
+    flirt_t1_mra.inputs.cost = 'mutualinfo'
+    flirt_t1_mra.run()
 
-    print("Resampling T1 to MRA space...")
-    flirt_T1_to_MRA = fsl.FLIRT()
-    flirt_T1_to_MRA.inputs.in_file = image_path_no_brain
-    flirt_T1_to_MRA.inputs.reference = image_path
-    flirt_T1_to_MRA.inputs.out_file = T1_in_MRA_path
-    flirt_T1_to_MRA.inputs.out_matrix_file = os.path.join(output_dir, f"{image_t1_name}_brain_flirtt.mat")
-    flirt_T1_to_MRA.inputs.apply_xfm = True
-    flirt_T1_to_MRA.inputs.interp = 'trilinear'
-    flirt_T1_to_MRA.inputs.uses_qform = True
-    flirt_T1_to_MRA.run()
+    # 4. MNI -> T1 (12-DOF)
+    # We save the image here to see if the MNI Template fits your patient's T1
+    print(f"  [DEBUG 4/6] FLIRT: Registering MNI Template to Subject T1...")
+    mni_in_t1_img = os.path.join(output_dir, f"{t1_name}_MNI_in_T1.nii.gz")
+    mni_to_t1_mat = os.path.join(output_dir, "mni_to_t1.mat")
+    
+    flirt_mni_t1 = fsl.FLIRT()
+    flirt_mni_t1.inputs.in_file = mni_template_path
+    flirt_mni_t1.inputs.reference = t1_reoriented
+    flirt_mni_t1.inputs.out_file = mni_in_t1_img
+    flirt_mni_t1.inputs.out_matrix_file = mni_to_t1_mat
+    flirt_mni_t1.inputs.dof = 12
+    flirt_mni_t1.inputs.cost = 'corratio'
+    flirt_mni_t1.run()
 
-    # ============================================================================
-    # 3. Prepare atlas binary mask
-    # ============================================================================
+    # 5. CONCATENATE MATRICES
+    print(f"  [DEBUG 5/6] CONVERT_XFM: Combining transforms (MNI -> T1 -> MRA)...")
+    combined_mat = os.path.join(output_dir, "combined_mni_to_mra.mat")
+    concat = fsl.ConvertXFM()
+    concat.inputs.in_file = mni_to_t1_mat
+    concat.inputs.in_file2 = t1_to_mra_mat
+    concat.inputs.concat_xfm = True
+    concat.inputs.out_file = combined_mat
+    concat.run()
 
-    atlas_img = nib.load(atlas_path)
-    atlas_data = atlas_img.get_fdata()
-    atlas_binary = (atlas_data > 0).astype(np.uint8)
-    atlas_binary_img = nib.Nifti1Image(atlas_binary, affine=atlas_img.affine, header=atlas_img.header)
-    nib.save(atlas_binary_img, atlas_no_brain_mask)
+    # 6. FINAL WARP: ATLAS -> MRA
+    print(f"  [DEBUG 6/6] APPLYXFM: Warping Atlas labels to MRA space...")
+    reg_atlas_path = os.path.join(output_dir, f"{t1_name}_registered_atlas.nii.gz")
+    apply_xfm = fsl.ApplyXFM()
+    apply_xfm.inputs.in_file = atlas_path
+    apply_xfm.inputs.reference = image_path
+    apply_xfm.inputs.apply_xfm = True
+    apply_xfm.inputs.in_matrix_file = combined_mat 
+    apply_xfm.inputs.interp = 'nearestneighbour'
+    apply_xfm.inputs.out_file = reg_atlas_path
+    apply_xfm.run()
 
-    # ============================================================================
-    # 4. Step 1: Register atlas MASK to T1 (in MRA space)
-    # ============================================================================
+    return reg_atlas_path
 
-    print("Step 1: Registering atlas mask to T1...")
-    flirt_atlas_mask_to_T1 = fsl.FLIRT()
-    flirt_atlas_mask_to_T1.inputs.in_file = atlas_no_brain_mask
-    flirt_atlas_mask_to_T1.inputs.reference = T1_in_MRA_path
-    flirt_atlas_mask_to_T1.inputs.out_file = os.path.join(output_dir, f"{image_t1_name}_atlas_mask_to_T1.nii.gz")
-    flirt_atlas_mask_to_T1.inputs.out_matrix_file = os.path.join(output_dir, f"{image_t1_name}_atlas_mask_to_T1.mat")
-    flirt_atlas_mask_to_T1.inputs.dof = 12
-    flirt_atlas_mask_to_T1.inputs.interp = 'nearestneighbour'
-    flirt_atlas_mask_to_T1.inputs.uses_qform = True
-    flirt_atlas_mask_to_T1.run()
+def process_registration(image_path, image_t1_path, mask_path, atlas_path, output_dir):
+    # Check for the MNI template file
+    atlas_dir = os.path.dirname(atlas_path)
+    mni_template = os.path.join(atlas_dir, "MNI152_T1_1mm_brain.nii.gz")
+    
+    if not os.path.exists(mni_template):
+         mni_template = os.path.join(atlas_dir, "MNI152_T1_1mm_Brain.nii.gz")
 
-    # ============================================================================
-    # 5. Step 2: Register full atlas to T1 (using mask alignment as initial)
-    # ============================================================================
+    if not os.path.exists(mni_template):
+        raise FileNotFoundError(f"Missing MNI Template: {mni_template}")
 
-    print("Step 2: Registering full atlas to T1...")
-    flirt_atlas_to_T1 = fsl.FLIRT()
-    flirt_atlas_to_T1.inputs.in_file = atlas_path
-    flirt_atlas_to_T1.inputs.reference = T1_in_MRA_path
-    flirt_atlas_to_T1.inputs.out_file = reg_atlas_path
-    flirt_atlas_to_T1.inputs.out_matrix_file = os.path.join(output_dir, f"{image_t1_name}_atlas_to_T1.mat")
-    flirt_atlas_to_T1.inputs.in_matrix_file = os.path.join(output_dir, f"{image_t1_name}_atlas_mask_to_T1.mat")
-    flirt_atlas_to_T1.inputs.searchr_x = [-30, 30]  # Constrain rotation search
-    flirt_atlas_to_T1.inputs.searchr_y = [-30, 30]
-    flirt_atlas_to_T1.inputs.searchr_z = [-30, 30]
-    flirt_atlas_to_T1.inputs.dof = 12
-    flirt_atlas_to_T1.inputs.interp = 'nearestneighbour'
-    flirt_atlas_to_T1.inputs.uses_qform = True
-    flirt_atlas_to_T1.run()
-
-    print(f"Registered atlas saved to: {reg_atlas_path}")
-
-def process_registration(
-    image_path: str,
-    image_t1_path: str,
-    mask_path: str,
-    atlas_path: str,
-    output_dir: str = ".",
-):
-    """
-    Process vessel segmentation with atlas registration and metric computation.
-
-    Registers an atlas to the image space, extracts vessel regions based on
-    atlas labels, and computes morphological metrics for each region.
-
-    Parameters
-    ----------
-    image_path : str or Path
-        Path to the reference MRA image (.nii or .nii.gz) used for registration
-        and metric computation. Defines the target space.
-    image_t1_path : str or Path
-        Path to the T1-weighted MRI image (.nii or .nii.gz) used as the intermediate
-        registration target. T1 is registered to MRA, then atlas to T1.
-    mask_path : str or Path
-        Path to the binary vessel segmentation mask (.nii or .nii.gz).
-        Expected to contain binary values (0=background, 1=vessel).
-    atlas_path : str or Path
-        Path to the atlas file (.nii or .nii.gz) with labelled regions.
-        Each unique integer label represents a different anatomical region.
-    selected_metrics : list of str
-        List of metric names to compute for each region. Examples include:
-        'volume', 'length', 'tortuosity', 'mean_radius', 'surface_area'.
-    save_segment_masks : bool
-        If True, saves individual segmentation masks for each atlas region.
-        Masks are saved to the same directory as mask_path.
-    save_conn_comp_masks : bool
-        If True, saves connected component masks for each region.
-        Useful for analysing disconnected vessel segments separately.
-
-    Returns
-    -------
-    dict
-        Results dictionary with structure:
-        {
-            'region_metrics': {
-                label1: {metric1: value1, metric2: value2, ...},
-                label2: {metric1: value1, metric2: value2, ...},
-                ...
-            }
-        }
-        where each label is an atlas region ID, and metrics are computed values.
-        Regions with no vessel segmentation are excluded from the results.
-"""
-    # Load binary mask
-    seg = nib.load(mask_path)
-    arr_seg = seg.get_fdata()
-    atlas_registration(atlas_path, arr_seg, image_path, image_t1_path, output_dir)
+    atlas_registration(atlas_path, mni_template, image_path, image_t1_path, output_dir)

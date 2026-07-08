@@ -1,7 +1,9 @@
+import argparse
 import os
 import sys
 import traceback
 import logging
+import zipfile
 from pathlib import Path
 from tqdm import tqdm
 from multiprocessing import Pool, cpu_count, Manager
@@ -22,13 +24,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Set paths
-segmentation_folder = os.path.join('path/to/nnUNet')
+segmentation_folder = os.path.join('CereVessMRA', 'gt')
 image_folder = os.path.join('path/to/00_ORIGINAL_Dataset')
 t1_image_folder = os.path.join('path/to/IXI_T1/sources')
-
-atlas_path = 'ArterialAtlas.nii.gz'
-label_map_path = 'ArterialAtlas_labels.txt'
 output_base_folder = 'Results/'
+
+atlas_path = os.path.join('Atlas', 'Atlas_MNI152', 'ArterialAtlas.nii')
+atlas_zip_path = os.path.join('Atlas', 'Atlas_MNI152.zip')
+label_map_path = os.path.join('Atlas', 'ArterialAtlasLables.txt')
+output_base_folder = 'Results/'
+
+use_atlas = True  # Set to True to enable atlas registration and regional metrics
 
 # Selected metrics to compute
 selected_metrics = [ 'total_length', 'num_bifurcations', 'bifurcation_density', 'volume',
@@ -68,7 +74,24 @@ if invalid:
     raise ValueError(f"Invalid metrics requested: {invalid}")
 
 
-def process_single_file(fname, image_folder, t1_image_folder, segmentation_folder, atlas_path, output_base_folder, skip_existing):
+def ensure_atlas_available(atlas_path, atlas_zip_path):
+    if os.path.exists(atlas_path):
+        return atlas_path
+    if not os.path.exists(atlas_zip_path):
+        raise FileNotFoundError(
+            f"Atlas file not found: {atlas_path}.\n" \
+            f"Also could not find expected zip archive: {atlas_zip_path}.\n" \
+            "Please extract the atlas archive or set --atlas-path to a valid atlas file."
+        )
+    print(f"Extracting atlas from {atlas_zip_path}...")
+    with zipfile.ZipFile(atlas_zip_path, 'r') as zf:
+        zf.extractall(os.path.dirname(atlas_zip_path))
+    if not os.path.exists(atlas_path):
+        raise FileNotFoundError(f"Expected atlas after extraction not found: {atlas_path}")
+    return atlas_path
+
+
+def process_single_file(fname, image_folder, t1_image_folder, segmentation_folder, atlas_path, output_base_folder, skip_existing, use_atlas, label_map_path):
     """Process a single segmentation file with comprehensive error handling"""
     
     try:
@@ -96,6 +119,13 @@ def process_single_file(fname, image_folder, t1_image_folder, segmentation_folde
         if not os.path.exists(mask_path):
             raise FileNotFoundError(f"Mask file not found: {mask_path}")
         if not os.path.exists(image_path):
+            if use_atlas:
+                raise FileNotFoundError(
+                    f"Image file not found: {image_path}\n"
+                    "  This folder is required only for atlas registration and "
+                    "metric mapping. If you do not have the original image data, "
+                    "run without --use-atlas or provide a valid image folder."
+                )
             logger.warning(f"Image file not found: {image_path}")
     
         #=====================================================================================================#
@@ -104,13 +134,13 @@ def process_single_file(fname, image_folder, t1_image_folder, segmentation_folde
         
         if use_atlas:
             # Determine T1 image path
-            t1_fname = fname.replace('MRA', 'T1') # File name of the corresponding T1 image (with extension)
-            t1_patient_name = patient_name.replace('MRA', 'T1') # Patient name for T1 image (without extension)    
+            t1_fname = fname.replace('MRA', 'T1')  # File name of the corresponding T1 image (with extension)
+            t1_patient_name = patient_name.replace('MRA', 'T1')  # Patient name for T1 image (without extension)
             t1_image_path = os.path.join(t1_image_folder, t1_fname)
-            
+
             if not os.path.exists(t1_image_path):
-                logger.warning(f"T1 image file not found: {t1_image_path}")
-        
+                raise FileNotFoundError(f"T1 image file not found: {t1_image_path}")
+
             registered_atlas_path = os.path.join(output_folder, f"{t1_patient_name}_registered_atlas.nii.gz")
             if skip_existing and os.path.exists(registered_atlas_path):
                 logger.info(f"  Skipped ATLAS REGISTRATION: {fname} (output already exists)")
@@ -144,7 +174,16 @@ def process_single_file(fname, image_folder, t1_image_folder, segmentation_folde
             logger.info(f"  Skipped METRICS COMPUTATION: {fname} (output already exists)")
         else:
             logger.info(f"  Starting METRICS COMPUTATION for: {fname}")
-            extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metrics, label_map_path, registered_atlas_path=registered_atlas_path if use_atlas else None)
+            extract_metrics(
+                patient_name,
+                output_folder,
+                graph_pkl_path,
+                selected_metrics,
+                label_map_path,
+                registered_atlas_path=registered_atlas_path if use_atlas else None,
+                save_segment_masks=None,
+                save_conn_comp_masks=None
+            )
             logger.info(f"  Metrics computed and saved in: {output_folder}")
         
         #=====================================================================================================#
@@ -160,40 +199,75 @@ def process_single_file(fname, image_folder, t1_image_folder, segmentation_folde
         return {"status": "failed", "file": fname, "error": str(e)}
 
 def main():
+    parser = argparse.ArgumentParser(description='Run CaravelMetrics processing with optional atlas registration.')
+    parser.add_argument('--seg-folder', default=segmentation_folder, help='Segmentation input folder')
+    parser.add_argument('--image-folder', default=image_folder, help='Original image folder for atlas registration')
+    parser.add_argument('--t1-folder', default=t1_image_folder, help='T1 image folder for atlas registration')
+    parser.add_argument('--output-folder', default=output_base_folder, help='Base output folder')
+    parser.add_argument('--atlas-path', default=atlas_path, help='Path to the atlas NIfTI file')
+    parser.add_argument('--atlas-zip', default=atlas_zip_path, help='Path to the atlas ZIP archive to extract if needed')
+    parser.add_argument('--label-map-path', default=label_map_path, help='Path to the atlas label map text file')
+    parser.add_argument('--use-atlas', dest='use_atlas', action='store_true', help='Enable atlas registration and region-based metrics')
+    parser.add_argument('--no-atlas', dest='use_atlas', action='store_false', help='Disable atlas registration and region-based metrics')
+    parser.set_defaults(use_atlas=False)
+    parser.add_argument('--skip-existing', action='store_true', help='Skip processing if output files already exist')
+    parser.add_argument('--no-parallel', action='store_true', help='Disable parallel processing')
+    parser.add_argument('--num-workers', type=int, default=num_workers, help='Number of parallel workers')
+    parser.add_argument('--chunk-size', type=int, default=chunk_size, help='Chunk size for parallel processing')
+    args = parser.parse_args()
+
+    segmentation_folder_arg = args.seg_folder
+    image_folder_arg = args.image_folder
+    t1_image_folder_arg = args.t1_folder
+    output_base_folder_arg = args.output_folder
+    atlas_path_arg = args.atlas_path
+    atlas_zip_path_arg = args.atlas_zip
+    label_map_path_arg = args.label_map_path
+    use_atlas_arg = args.use_atlas
+    skip_existing_arg = args.skip_existing
+    run_parallel_arg = not args.no_parallel
+    num_workers_arg = args.num_workers
+    chunk_size_arg = args.chunk_size
+
+    if use_atlas_arg:
+        atlas_path_arg = ensure_atlas_available(atlas_path_arg, atlas_zip_path_arg)
+
     # Get list of files to process
-    files_to_process = [fname for fname in os.listdir(segmentation_folder) if fname.endswith(('.nii', '.nii.gz', '.npy', '.npz'))]
+    files_to_process = [fname for fname in os.listdir(segmentation_folder_arg) if fname.endswith(('.nii', '.nii.gz', '.npy', '.npz'))]
     
     if not files_to_process:
         logger.warning("No segmentation files found!")
         return
     
     logger.info(f"Found {len(files_to_process)} files to process")
-    logger.info(f"Configuration: skip_existing={skip_existing}, run_parallel={run_parallel}")
+    logger.info(f"Configuration: use_atlas={use_atlas_arg}, skip_existing={skip_existing_arg}, run_parallel={run_parallel_arg}, num_workers={num_workers_arg}, chunk_size={chunk_size_arg}")
     
     # Create partial function with fixed arguments
     process_func = partial(
         process_single_file,
-        image_folder=image_folder,
-        t1_image_folder=t1_image_folder,
-        segmentation_folder=segmentation_folder,
-        atlas_path=atlas_path,
-        output_base_folder=output_base_folder,
-        skip_existing=skip_existing
+        image_folder=image_folder_arg,
+        t1_image_folder=t1_image_folder_arg,
+        segmentation_folder=segmentation_folder_arg,
+        atlas_path=atlas_path_arg,
+        output_base_folder=output_base_folder_arg,
+        skip_existing=skip_existing_arg,
+        use_atlas=use_atlas_arg,
+        label_map_path=label_map_path_arg
     )
     
     # Process files
-    if run_parallel:
+    if run_parallel_arg:
         # Determine number of workers
-        if num_workers is None:
+        if num_workers_arg is None:
             # Use all CPUs except 1, but at least 1
             max_workers = max(1, cpu_count() - 1)
         else:
-            max_workers = num_workers
+            max_workers = num_workers_arg
         
         # Don't use more workers than files
         max_workers = min(max_workers, len(files_to_process))
         logger.info(f"Using {max_workers} parallel workers (total CPUs: {cpu_count()})")
-        logger.info(f"Chunk size: {chunk_size}")
+        logger.info(f"Chunk size: {chunk_size_arg}")
         
         # Process files in parallel with better error handling
         try:
@@ -253,7 +327,7 @@ def main():
             logger.error(f"  - {failure['file']}: {failure['error']}")
         logger.error(f"\nCheck processing.log for detailed error information")
     
-    logger.info(f"\nAll results saved in: {os.path.abspath(output_base_folder)}")
+    logger.info(f"\nAll results saved in: {os.path.abspath(output_base_folder_arg)}")
     logger.info(f"Log file: processing.log")
     
     return completed, failed
