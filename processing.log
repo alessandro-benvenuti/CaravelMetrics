@@ -1185,3 +1185,276 @@ All results saved in: /Users/alessandrobenvenuti/Desktop/Università/Thesis/Car
 2026-07-08 14:21:59,168 - MainProcess - INFO - 
 All results saved in: /Users/alessandrobenvenuti/Desktop/Università/Thesis/CaravelMetrics/CaravelMetrics/Results
 2026-07-08 14:21:59,168 - MainProcess - INFO - Log file: processing.log
+2026-07-08 15:14:17,330 - MainProcess - INFO - Found 3 files to process
+2026-07-08 15:14:17,331 - MainProcess - INFO - Configuration: use_atlas=True, skip_existing=False, run_parallel=True, num_workers=None, chunk_size=1
+2026-07-08 15:14:17,331 - MainProcess - INFO - Using 3 parallel workers (total CPUs: 8)
+2026-07-08 15:14:17,331 - MainProcess - INFO - Chunk size: 1
+2026-07-08 15:14:20,102 - SpawnPoolWorker-3 - INFO - ============================================================
+2026-07-08 15:14:20,104 - SpawnPoolWorker-3 - INFO - Processing file: IXI002-Guys-0828-MRA.nii.gz (OUTPUT: Results/IXI002-Guys-0828-MRA)
+2026-07-08 15:14:20,104 - SpawnPoolWorker-3 - INFO - ============================================================
+2026-07-08 15:14:20,104 - SpawnPoolWorker-3 - INFO -   Starting ATLAS REGISTRATION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 15:14:20,112 - SpawnPoolWorker-1 - INFO - ============================================================
+2026-07-08 15:14:20,113 - SpawnPoolWorker-1 - INFO - Processing file: IXI015-HH-1258-MRA.nii.gz (OUTPUT: Results/IXI015-HH-1258-MRA)
+2026-07-08 15:14:20,113 - SpawnPoolWorker-1 - INFO - ============================================================
+2026-07-08 15:14:20,114 - SpawnPoolWorker-1 - INFO -   Starting ATLAS REGISTRATION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 15:14:20,408 - SpawnPoolWorker-2 - INFO - ============================================================
+2026-07-08 15:14:20,408 - SpawnPoolWorker-2 - INFO - Processing file: IXI023-Guys-0699-MRA.nii.gz (OUTPUT: Results/IXI023-Guys-0699-MRA)
+2026-07-08 15:14:20,408 - SpawnPoolWorker-2 - INFO - ============================================================
+2026-07-08 15:14:20,408 - SpawnPoolWorker-2 - INFO -   Starting ATLAS REGISTRATION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 15:15:55,958 - SpawnPoolWorker-2 - INFO -   REGISTERED ATLAS saved at: Results/IXI023-Guys-0699-MRA/IXI023-Guys-0699-T1_registered_atlas.nii.gz
+2026-07-08 15:15:55,960 - SpawnPoolWorker-2 - INFO -   Starting VESSEL GRAPH EXTRACTION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 15:15:55,960 - SpawnPoolWorker-2 - INFO -   Vessel graph extracted and saved in: Results/IXI023-Guys-0699-MRA
+2026-07-08 15:15:55,960 - SpawnPoolWorker-2 - INFO -   Starting METRICS COMPUTATION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 15:15:58,781 - SpawnPoolWorker-2 - INFO -   Metrics computed and saved in: Results/IXI023-Guys-0699-MRA
+2026-07-08 15:15:58,782 - SpawnPoolWorker-2 - INFO - Successfully completed processing: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 15:16:28,390 - SpawnPoolWorker-3 - INFO -   REGISTERED ATLAS saved at: Results/IXI002-Guys-0828-MRA/IXI002-Guys-0828-T1_registered_atlas.nii.gz
+2026-07-08 15:16:28,391 - SpawnPoolWorker-3 - INFO -   Starting VESSEL GRAPH EXTRACTION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 15:16:28,391 - SpawnPoolWorker-3 - INFO -   Vessel graph extracted and saved in: Results/IXI002-Guys-0828-MRA
+2026-07-08 15:16:28,391 - SpawnPoolWorker-3 - INFO -   Starting METRICS COMPUTATION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 15:16:30,526 - SpawnPoolWorker-3 - INFO -   Metrics computed and saved in: Results/IXI002-Guys-0828-MRA
+2026-07-08 15:16:30,527 - SpawnPoolWorker-3 - INFO - Successfully completed processing: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 15:16:52,960 - SpawnPoolWorker-1 - INFO -   REGISTERED ATLAS saved at: Results/IXI015-HH-1258-MRA/IXI015-HH-1258-T1_registered_atlas.nii.gz
+2026-07-08 15:16:52,961 - SpawnPoolWorker-1 - INFO -   Starting VESSEL GRAPH EXTRACTION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 15:16:52,961 - SpawnPoolWorker-1 - INFO -   Vessel graph extracted and saved in: Results/IXI015-HH-1258-MRA
+2026-07-08 15:16:52,961 - SpawnPoolWorker-1 - INFO -   Starting METRICS COMPUTATION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 15:16:55,493 - SpawnPoolWorker-1 - INFO -   Metrics computed and saved in: Results/IXI015-HH-1258-MRA
+2026-07-08 15:16:55,493 - SpawnPoolWorker-1 - INFO - Successfully completed processing: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 15:16:55,531 - MainProcess - INFO - 
+============================================================
+2026-07-08 15:16:55,532 - MainProcess - INFO - PROCESSING SUMMARY:
+2026-07-08 15:16:55,532 - MainProcess - INFO - ============================================================
+2026-07-08 15:16:55,532 - MainProcess - INFO - Successfully completed: 3/3
+2026-07-08 15:16:55,533 - MainProcess - INFO - Failed: 0/3
+2026-07-08 15:16:55,533 - MainProcess - INFO - Success rate: 100.0%
+2026-07-08 15:16:55,533 - MainProcess - INFO - 
+All results saved in: /Users/alessandrobenvenuti/Desktop/Università/Thesis/CaravelMetrics/CaravelMetrics/Results
+2026-07-08 15:16:55,533 - MainProcess - INFO - Log file: processing.log
+2026-07-08 15:50:36,139 - MainProcess - INFO - Found 3 files to process
+2026-07-08 15:50:36,140 - MainProcess - INFO - Configuration: use_atlas=True, skip_existing=False, run_parallel=True, num_workers=None, chunk_size=1
+2026-07-08 15:50:36,140 - MainProcess - INFO - Using 3 parallel workers (total CPUs: 8)
+2026-07-08 15:50:36,140 - MainProcess - INFO - Chunk size: 1
+2026-07-08 15:50:38,720 - SpawnPoolWorker-2 - INFO - ============================================================
+2026-07-08 15:50:38,720 - SpawnPoolWorker-2 - INFO - Processing file: IXI002-Guys-0828-MRA.nii.gz (OUTPUT: Results/IXI002-Guys-0828-MRA)
+2026-07-08 15:50:38,720 - SpawnPoolWorker-2 - INFO - ============================================================
+2026-07-08 15:50:38,720 - SpawnPoolWorker-2 - INFO -   Starting ATLAS REGISTRATION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 15:50:38,725 - SpawnPoolWorker-1 - INFO - ============================================================
+2026-07-08 15:50:38,725 - SpawnPoolWorker-1 - INFO - Processing file: IXI015-HH-1258-MRA.nii.gz (OUTPUT: Results/IXI015-HH-1258-MRA)
+2026-07-08 15:50:38,725 - SpawnPoolWorker-1 - INFO - ============================================================
+2026-07-08 15:50:38,725 - SpawnPoolWorker-1 - INFO -   Starting ATLAS REGISTRATION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 15:50:38,776 - SpawnPoolWorker-3 - INFO - ============================================================
+2026-07-08 15:50:38,776 - SpawnPoolWorker-3 - INFO - Processing file: IXI023-Guys-0699-MRA.nii.gz (OUTPUT: Results/IXI023-Guys-0699-MRA)
+2026-07-08 15:50:38,777 - SpawnPoolWorker-3 - INFO - ============================================================
+2026-07-08 15:50:38,777 - SpawnPoolWorker-3 - INFO -   Starting ATLAS REGISTRATION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 15:52:13,626 - SpawnPoolWorker-3 - INFO -   REGISTERED ATLAS saved at: Results/IXI023-Guys-0699-MRA/IXI023-Guys-0699-T1_registered_atlas.nii.gz
+2026-07-08 15:52:13,626 - SpawnPoolWorker-3 - INFO -   Starting VESSEL GRAPH EXTRACTION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 15:52:13,627 - SpawnPoolWorker-3 - INFO -   Vessel graph extracted and saved in: Results/IXI023-Guys-0699-MRA
+2026-07-08 15:52:13,627 - SpawnPoolWorker-3 - INFO -   Starting METRICS COMPUTATION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 15:52:16,476 - SpawnPoolWorker-3 - INFO -   Metrics computed and saved in: Results/IXI023-Guys-0699-MRA
+2026-07-08 15:52:16,476 - SpawnPoolWorker-3 - INFO - Successfully completed processing: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 15:52:49,706 - SpawnPoolWorker-2 - INFO -   REGISTERED ATLAS saved at: Results/IXI002-Guys-0828-MRA/IXI002-Guys-0828-T1_registered_atlas.nii.gz
+2026-07-08 15:52:49,707 - SpawnPoolWorker-2 - INFO -   Starting VESSEL GRAPH EXTRACTION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 15:52:49,707 - SpawnPoolWorker-2 - INFO -   Vessel graph extracted and saved in: Results/IXI002-Guys-0828-MRA
+2026-07-08 15:52:49,707 - SpawnPoolWorker-2 - INFO -   Starting METRICS COMPUTATION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 15:52:51,998 - SpawnPoolWorker-2 - INFO -   Metrics computed and saved in: Results/IXI002-Guys-0828-MRA
+2026-07-08 15:52:51,998 - SpawnPoolWorker-2 - INFO - Successfully completed processing: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 15:53:14,396 - SpawnPoolWorker-1 - INFO -   REGISTERED ATLAS saved at: Results/IXI015-HH-1258-MRA/IXI015-HH-1258-T1_registered_atlas.nii.gz
+2026-07-08 15:53:14,396 - SpawnPoolWorker-1 - INFO -   Starting VESSEL GRAPH EXTRACTION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 15:53:14,396 - SpawnPoolWorker-1 - INFO -   Vessel graph extracted and saved in: Results/IXI015-HH-1258-MRA
+2026-07-08 15:53:14,396 - SpawnPoolWorker-1 - INFO -   Starting METRICS COMPUTATION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 15:53:16,765 - SpawnPoolWorker-1 - INFO -   Metrics computed and saved in: Results/IXI015-HH-1258-MRA
+2026-07-08 15:53:16,765 - SpawnPoolWorker-1 - INFO - Successfully completed processing: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 15:53:16,791 - MainProcess - INFO - 
+============================================================
+2026-07-08 15:53:16,791 - MainProcess - INFO - PROCESSING SUMMARY:
+2026-07-08 15:53:16,791 - MainProcess - INFO - ============================================================
+2026-07-08 15:53:16,791 - MainProcess - INFO - Successfully completed: 3/3
+2026-07-08 15:53:16,791 - MainProcess - INFO - Failed: 0/3
+2026-07-08 15:53:16,791 - MainProcess - INFO - Success rate: 100.0%
+2026-07-08 15:53:16,791 - MainProcess - INFO - 
+All results saved in: /Users/alessandrobenvenuti/Desktop/Università/Thesis/CaravelMetrics/CaravelMetrics/Results
+2026-07-08 15:53:16,791 - MainProcess - INFO - Log file: processing.log
+2026-07-08 15:54:17,940 - MainProcess - INFO - Found 3 files to process
+2026-07-08 15:54:17,940 - MainProcess - INFO - Configuration: use_atlas=True, skip_existing=False, run_parallel=True, num_workers=None, chunk_size=1
+2026-07-08 15:54:17,940 - MainProcess - INFO - Using 3 parallel workers (total CPUs: 8)
+2026-07-08 15:54:17,940 - MainProcess - INFO - Chunk size: 1
+2026-07-08 15:54:20,242 - SpawnPoolWorker-3 - INFO - ============================================================
+2026-07-08 15:54:20,242 - SpawnPoolWorker-1 - INFO - ============================================================
+2026-07-08 15:54:20,242 - SpawnPoolWorker-3 - INFO - Processing file: IXI002-Guys-0828-MRA.nii.gz (OUTPUT: Results/IXI002-Guys-0828-MRA)
+2026-07-08 15:54:20,242 - SpawnPoolWorker-1 - INFO - Processing file: IXI015-HH-1258-MRA.nii.gz (OUTPUT: Results/IXI015-HH-1258-MRA)
+2026-07-08 15:54:20,242 - SpawnPoolWorker-3 - INFO - ============================================================
+2026-07-08 15:54:20,242 - SpawnPoolWorker-1 - INFO - ============================================================
+2026-07-08 15:54:20,242 - SpawnPoolWorker-3 - INFO -   Starting ATLAS REGISTRATION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 15:54:20,242 - SpawnPoolWorker-1 - INFO -   Starting ATLAS REGISTRATION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 15:54:20,294 - SpawnPoolWorker-2 - INFO - ============================================================
+2026-07-08 15:54:20,294 - SpawnPoolWorker-2 - INFO - Processing file: IXI023-Guys-0699-MRA.nii.gz (OUTPUT: Results/IXI023-Guys-0699-MRA)
+2026-07-08 15:54:20,294 - SpawnPoolWorker-2 - INFO - ============================================================
+2026-07-08 15:54:20,294 - SpawnPoolWorker-2 - INFO -   Starting ATLAS REGISTRATION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 15:55:45,874 - SpawnPoolWorker-2 - INFO -   REGISTERED ATLAS saved at: Results/IXI023-Guys-0699-MRA/IXI023-Guys-0699-T1_registered_atlas.nii.gz
+2026-07-08 15:55:45,874 - SpawnPoolWorker-2 - INFO -   Starting VESSEL GRAPH EXTRACTION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 15:56:21,569 - SpawnPoolWorker-3 - INFO -   REGISTERED ATLAS saved at: Results/IXI002-Guys-0828-MRA/IXI002-Guys-0828-T1_registered_atlas.nii.gz
+2026-07-08 15:56:21,569 - SpawnPoolWorker-3 - INFO -   Starting VESSEL GRAPH EXTRACTION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 15:56:48,719 - SpawnPoolWorker-1 - INFO -   REGISTERED ATLAS saved at: Results/IXI015-HH-1258-MRA/IXI015-HH-1258-T1_registered_atlas.nii.gz
+2026-07-08 15:56:48,720 - SpawnPoolWorker-1 - INFO -   Starting VESSEL GRAPH EXTRACTION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 15:58:00,719 - SpawnPoolWorker-2 - INFO -   Vessel graph extracted and saved in: Results/IXI023-Guys-0699-MRA
+2026-07-08 15:58:00,720 - SpawnPoolWorker-2 - INFO -   Starting METRICS COMPUTATION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 15:58:02,875 - SpawnPoolWorker-2 - INFO -   -> Saved master atlas graph: Results/IXI023-Guys-0699-MRA/IXI023-Guys-0699-MRA_atlas_output/IXI023-Guys-0699-MRA_labeled_atlas.pkl
+2026-07-08 15:58:03,453 - SpawnPoolWorker-2 - INFO -   -> Saved atlas VTP: Results/IXI023-Guys-0699-MRA/IXI023-Guys-0699-MRA_atlas_output/IXI023-Guys-0699-MRA_labeled_atlas.vtp
+2026-07-08 15:58:03,461 - SpawnPoolWorker-2 - INFO -   Metrics computed and saved in: Results/IXI023-Guys-0699-MRA
+2026-07-08 15:58:03,461 - SpawnPoolWorker-2 - INFO - Successfully completed processing: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 15:58:14,375 - SpawnPoolWorker-3 - INFO -   Vessel graph extracted and saved in: Results/IXI002-Guys-0828-MRA
+2026-07-08 15:58:14,376 - SpawnPoolWorker-3 - INFO -   Starting METRICS COMPUTATION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 15:58:16,073 - SpawnPoolWorker-3 - INFO -   -> Saved master atlas graph: Results/IXI002-Guys-0828-MRA/IXI002-Guys-0828-MRA_atlas_output/IXI002-Guys-0828-MRA_labeled_atlas.pkl
+2026-07-08 15:58:16,477 - SpawnPoolWorker-3 - INFO -   -> Saved atlas VTP: Results/IXI002-Guys-0828-MRA/IXI002-Guys-0828-MRA_atlas_output/IXI002-Guys-0828-MRA_labeled_atlas.vtp
+2026-07-08 15:58:16,482 - SpawnPoolWorker-3 - INFO -   Metrics computed and saved in: Results/IXI002-Guys-0828-MRA
+2026-07-08 15:58:16,482 - SpawnPoolWorker-3 - INFO - Successfully completed processing: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 15:59:05,387 - SpawnPoolWorker-1 - INFO -   Vessel graph extracted and saved in: Results/IXI015-HH-1258-MRA
+2026-07-08 15:59:05,388 - SpawnPoolWorker-1 - INFO -   Starting METRICS COMPUTATION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 15:59:07,694 - SpawnPoolWorker-1 - INFO -   -> Saved master atlas graph: Results/IXI015-HH-1258-MRA/IXI015-HH-1258-MRA_atlas_output/IXI015-HH-1258-MRA_labeled_atlas.pkl
+2026-07-08 15:59:08,316 - SpawnPoolWorker-1 - INFO -   -> Saved atlas VTP: Results/IXI015-HH-1258-MRA/IXI015-HH-1258-MRA_atlas_output/IXI015-HH-1258-MRA_labeled_atlas.vtp
+2026-07-08 15:59:08,325 - SpawnPoolWorker-1 - INFO -   Metrics computed and saved in: Results/IXI015-HH-1258-MRA
+2026-07-08 15:59:08,325 - SpawnPoolWorker-1 - INFO - Successfully completed processing: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 15:59:08,367 - MainProcess - INFO - 
+============================================================
+2026-07-08 15:59:08,369 - MainProcess - INFO - PROCESSING SUMMARY:
+2026-07-08 15:59:08,369 - MainProcess - INFO - ============================================================
+2026-07-08 15:59:08,369 - MainProcess - INFO - Successfully completed: 3/3
+2026-07-08 15:59:08,369 - MainProcess - INFO - Failed: 0/3
+2026-07-08 15:59:08,369 - MainProcess - INFO - Success rate: 100.0%
+2026-07-08 15:59:08,369 - MainProcess - INFO - 
+All results saved in: /Users/alessandrobenvenuti/Desktop/Università/Thesis/CaravelMetrics/CaravelMetrics/Results
+2026-07-08 15:59:08,369 - MainProcess - INFO - Log file: processing.log
+2026-07-08 16:23:25,491 - MainProcess - INFO - Found 3 files to process
+2026-07-08 16:23:25,491 - MainProcess - INFO - Configuration: use_atlas=True, skip_existing=False, run_parallel=True, num_workers=None, chunk_size=1
+2026-07-08 16:23:25,491 - MainProcess - INFO - Using 3 parallel workers (total CPUs: 8)
+2026-07-08 16:23:25,491 - MainProcess - INFO - Chunk size: 1
+2026-07-08 16:23:28,003 - SpawnPoolWorker-1 - INFO - ============================================================
+2026-07-08 16:23:28,003 - SpawnPoolWorker-3 - INFO - ============================================================
+2026-07-08 16:23:28,004 - SpawnPoolWorker-1 - INFO - Processing file: IXI015-HH-1258-MRA.nii.gz (OUTPUT: Results/IXI015-HH-1258-MRA)
+2026-07-08 16:23:28,004 - SpawnPoolWorker-1 - INFO - ============================================================
+2026-07-08 16:23:28,004 - SpawnPoolWorker-3 - INFO - Processing file: IXI002-Guys-0828-MRA.nii.gz (OUTPUT: Results/IXI002-Guys-0828-MRA)
+2026-07-08 16:23:28,005 - SpawnPoolWorker-3 - INFO - ============================================================
+2026-07-08 16:23:28,005 - SpawnPoolWorker-1 - INFO -   Starting ATLAS REGISTRATION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 16:23:28,005 - SpawnPoolWorker-3 - INFO -   Starting ATLAS REGISTRATION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 16:23:28,044 - SpawnPoolWorker-2 - INFO - ============================================================
+2026-07-08 16:23:28,044 - SpawnPoolWorker-2 - INFO - Processing file: IXI023-Guys-0699-MRA.nii.gz (OUTPUT: Results/IXI023-Guys-0699-MRA)
+2026-07-08 16:23:28,045 - SpawnPoolWorker-2 - INFO - ============================================================
+2026-07-08 16:23:28,045 - SpawnPoolWorker-2 - INFO -   Starting ATLAS REGISTRATION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 16:24:58,049 - SpawnPoolWorker-2 - INFO -   REGISTERED ATLAS saved at: Results/IXI023-Guys-0699-MRA/IXI023-Guys-0699-T1_registered_atlas.nii.gz
+2026-07-08 16:24:58,050 - SpawnPoolWorker-2 - INFO -   Starting VESSEL GRAPH EXTRACTION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 16:24:58,050 - SpawnPoolWorker-2 - INFO -   Vessel graph extracted and saved in: Results/IXI023-Guys-0699-MRA
+2026-07-08 16:24:58,050 - SpawnPoolWorker-2 - INFO -   Starting METRICS COMPUTATION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 16:24:59,560 - SpawnPoolWorker-2 - INFO -   Generating continuous atlas VTP for IXI023-Guys-0699-MRA...
+2026-07-08 16:25:00,300 - SpawnPoolWorker-2 - INFO -   -> Saved continuous labeled VTP: Results/IXI023-Guys-0699-MRA/vessel_graph_labeled_atlas.vtp
+2026-07-08 16:25:00,361 - SpawnPoolWorker-2 - INFO -   Metrics computed and saved in: Results/IXI023-Guys-0699-MRA
+2026-07-08 16:25:00,361 - SpawnPoolWorker-2 - INFO - Successfully completed processing: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 16:25:32,509 - SpawnPoolWorker-3 - INFO -   REGISTERED ATLAS saved at: Results/IXI002-Guys-0828-MRA/IXI002-Guys-0828-T1_registered_atlas.nii.gz
+2026-07-08 16:25:32,509 - SpawnPoolWorker-3 - INFO -   Starting VESSEL GRAPH EXTRACTION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 16:25:32,509 - SpawnPoolWorker-3 - INFO -   Vessel graph extracted and saved in: Results/IXI002-Guys-0828-MRA
+2026-07-08 16:25:32,509 - SpawnPoolWorker-3 - INFO -   Starting METRICS COMPUTATION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 16:25:33,511 - SpawnPoolWorker-3 - INFO -   Generating continuous atlas VTP for IXI002-Guys-0828-MRA...
+2026-07-08 16:25:34,041 - SpawnPoolWorker-3 - INFO -   -> Saved continuous labeled VTP: Results/IXI002-Guys-0828-MRA/vessel_graph_labeled_atlas.vtp
+2026-07-08 16:25:34,081 - SpawnPoolWorker-3 - INFO -   Metrics computed and saved in: Results/IXI002-Guys-0828-MRA
+2026-07-08 16:25:34,081 - SpawnPoolWorker-3 - INFO - Successfully completed processing: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 16:25:54,098 - SpawnPoolWorker-1 - INFO -   REGISTERED ATLAS saved at: Results/IXI015-HH-1258-MRA/IXI015-HH-1258-T1_registered_atlas.nii.gz
+2026-07-08 16:25:54,098 - SpawnPoolWorker-1 - INFO -   Starting VESSEL GRAPH EXTRACTION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 16:25:54,099 - SpawnPoolWorker-1 - INFO -   Vessel graph extracted and saved in: Results/IXI015-HH-1258-MRA
+2026-07-08 16:25:54,099 - SpawnPoolWorker-1 - INFO -   Starting METRICS COMPUTATION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 16:25:55,616 - SpawnPoolWorker-1 - INFO -   Generating continuous atlas VTP for IXI015-HH-1258-MRA...
+2026-07-08 16:25:56,277 - SpawnPoolWorker-1 - INFO -   -> Saved continuous labeled VTP: Results/IXI015-HH-1258-MRA/vessel_graph_labeled_atlas.vtp
+2026-07-08 16:25:56,319 - SpawnPoolWorker-1 - INFO -   Metrics computed and saved in: Results/IXI015-HH-1258-MRA
+2026-07-08 16:25:56,319 - SpawnPoolWorker-1 - INFO - Successfully completed processing: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 16:25:56,347 - MainProcess - INFO - 
+============================================================
+2026-07-08 16:25:56,348 - MainProcess - INFO - PROCESSING SUMMARY:
+2026-07-08 16:25:56,348 - MainProcess - INFO - ============================================================
+2026-07-08 16:25:56,348 - MainProcess - INFO - Successfully completed: 3/3
+2026-07-08 16:25:56,348 - MainProcess - INFO - Failed: 0/3
+2026-07-08 16:25:56,348 - MainProcess - INFO - Success rate: 100.0%
+2026-07-08 16:25:56,348 - MainProcess - INFO - 
+All results saved in: /Users/alessandrobenvenuti/Desktop/Università/Thesis/CaravelMetrics/CaravelMetrics/Results
+2026-07-08 16:25:56,348 - MainProcess - INFO - Log file: processing.log
+2026-07-08 16:40:00,666 - MainProcess - INFO - Found 3 files to process
+2026-07-08 16:40:00,667 - MainProcess - INFO - Configuration: use_atlas=True, skip_existing=False, run_parallel=True, num_workers=None, chunk_size=1
+2026-07-08 16:40:00,667 - MainProcess - INFO - Using 3 parallel workers (total CPUs: 8)
+2026-07-08 16:40:00,667 - MainProcess - INFO - Chunk size: 1
+2026-07-08 16:40:02,997 - SpawnPoolWorker-3 - INFO - ============================================================
+2026-07-08 16:40:02,997 - SpawnPoolWorker-2 - INFO - ============================================================
+2026-07-08 16:40:02,998 - SpawnPoolWorker-3 - INFO - Processing file: IXI002-Guys-0828-MRA.nii.gz (OUTPUT: Results/IXI002-Guys-0828-MRA)
+2026-07-08 16:40:02,998 - SpawnPoolWorker-2 - INFO - Processing file: IXI015-HH-1258-MRA.nii.gz (OUTPUT: Results/IXI015-HH-1258-MRA)
+2026-07-08 16:40:02,998 - SpawnPoolWorker-2 - INFO - ============================================================
+2026-07-08 16:40:02,998 - SpawnPoolWorker-3 - INFO - ============================================================
+2026-07-08 16:40:02,998 - SpawnPoolWorker-2 - INFO -   Starting ATLAS REGISTRATION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 16:40:02,998 - SpawnPoolWorker-3 - INFO -   Starting ATLAS REGISTRATION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 16:40:03,043 - SpawnPoolWorker-1 - INFO - ============================================================
+2026-07-08 16:40:03,044 - SpawnPoolWorker-1 - INFO - Processing file: IXI023-Guys-0699-MRA.nii.gz (OUTPUT: Results/IXI023-Guys-0699-MRA)
+2026-07-08 16:40:03,044 - SpawnPoolWorker-1 - INFO - ============================================================
+2026-07-08 16:40:03,044 - SpawnPoolWorker-1 - INFO -   Starting ATLAS REGISTRATION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 16:40:05,163 - SpawnPoolWorker-1 - INFO - stdout 2026-07-08T16:40:05.162892:Final FOV is: 
+2026-07-08 16:40:05,163 - SpawnPoolWorker-1 - INFO - stdout 2026-07-08T16:40:05.162892:0.000000 256.000000 43.000000 192.000000 0.000000 130.000000 
+2026-07-08 16:40:05,163 - SpawnPoolWorker-1 - INFO - stdout 2026-07-08T16:40:05.162892:
+2026-07-08 16:40:05,515 - SpawnPoolWorker-2 - INFO - stdout 2026-07-08T16:40:05.514847:Final FOV is: 
+2026-07-08 16:40:05,516 - SpawnPoolWorker-2 - INFO - stdout 2026-07-08T16:40:05.514847:0.000000 256.000000 63.000000 192.000000 0.000000 150.000000 
+2026-07-08 16:40:05,516 - SpawnPoolWorker-2 - INFO - stdout 2026-07-08T16:40:05.514847:
+2026-07-08 16:40:06,369 - SpawnPoolWorker-3 - INFO - stdout 2026-07-08T16:40:06.369602:Final FOV is: 
+2026-07-08 16:40:06,371 - SpawnPoolWorker-3 - INFO - stdout 2026-07-08T16:40:06.369602:0.000000 256.000000 49.000000 192.000000 0.000000 150.000000 
+2026-07-08 16:40:06,371 - SpawnPoolWorker-3 - INFO - stdout 2026-07-08T16:40:06.369602:
+2026-07-08 16:40:19,767 - MainProcess - WARNING - Processing interrupted by user
+2026-07-08 16:42:27,228 - MainProcess - INFO - Found 3 files to process
+2026-07-08 16:42:27,229 - MainProcess - INFO - Configuration: use_atlas=True, skip_existing=False, run_parallel=True, num_workers=None, chunk_size=1
+2026-07-08 16:42:27,229 - MainProcess - INFO - Using 3 parallel workers (total CPUs: 8)
+2026-07-08 16:42:27,229 - MainProcess - INFO - Chunk size: 1
+2026-07-08 16:42:29,534 - SpawnPoolWorker-1 - INFO - ============================================================
+2026-07-08 16:42:29,534 - SpawnPoolWorker-3 - INFO - ============================================================
+2026-07-08 16:42:29,534 - SpawnPoolWorker-1 - INFO - Processing file: IXI002-Guys-0828-MRA.nii.gz (OUTPUT: Results/IXI002-Guys-0828-MRA)
+2026-07-08 16:42:29,534 - SpawnPoolWorker-3 - INFO - Processing file: IXI015-HH-1258-MRA.nii.gz (OUTPUT: Results/IXI015-HH-1258-MRA)
+2026-07-08 16:42:29,534 - SpawnPoolWorker-1 - INFO - ============================================================
+2026-07-08 16:42:29,534 - SpawnPoolWorker-3 - INFO - ============================================================
+2026-07-08 16:42:29,534 - SpawnPoolWorker-1 - INFO -   Starting ATLAS REGISTRATION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 16:42:29,534 - SpawnPoolWorker-3 - INFO -   Starting ATLAS REGISTRATION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 16:42:29,642 - SpawnPoolWorker-2 - INFO - ============================================================
+2026-07-08 16:42:29,642 - SpawnPoolWorker-2 - INFO - Processing file: IXI023-Guys-0699-MRA.nii.gz (OUTPUT: Results/IXI023-Guys-0699-MRA)
+2026-07-08 16:42:29,642 - SpawnPoolWorker-2 - INFO - ============================================================
+2026-07-08 16:42:29,642 - SpawnPoolWorker-2 - INFO -   Starting ATLAS REGISTRATION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 16:42:31,018 - SpawnPoolWorker-2 - INFO - stdout 2026-07-08T16:42:31.017962:Final FOV is: 
+2026-07-08 16:42:31,018 - SpawnPoolWorker-2 - INFO - stdout 2026-07-08T16:42:31.017962:0.000000 256.000000 43.000000 192.000000 0.000000 130.000000 
+2026-07-08 16:42:31,018 - SpawnPoolWorker-2 - INFO - stdout 2026-07-08T16:42:31.017962:
+2026-07-08 16:42:31,375 - SpawnPoolWorker-3 - INFO - stdout 2026-07-08T16:42:31.375287:Final FOV is: 
+2026-07-08 16:42:31,375 - SpawnPoolWorker-3 - INFO - stdout 2026-07-08T16:42:31.375287:0.000000 256.000000 63.000000 192.000000 0.000000 150.000000 
+2026-07-08 16:42:31,375 - SpawnPoolWorker-3 - INFO - stdout 2026-07-08T16:42:31.375287:
+2026-07-08 16:42:32,196 - SpawnPoolWorker-1 - INFO - stdout 2026-07-08T16:42:32.196117:Final FOV is: 
+2026-07-08 16:42:32,196 - SpawnPoolWorker-1 - INFO - stdout 2026-07-08T16:42:32.196117:0.000000 256.000000 49.000000 192.000000 0.000000 150.000000 
+2026-07-08 16:42:32,197 - SpawnPoolWorker-1 - INFO - stdout 2026-07-08T16:42:32.196117:
+2026-07-08 16:43:51,525 - SpawnPoolWorker-2 - INFO -   REGISTERED ATLAS saved at: Results/IXI023-Guys-0699-MRA/IXI023-Guys-0699-T1_registered_atlas.nii.gz
+2026-07-08 16:43:51,526 - SpawnPoolWorker-2 - INFO -   Starting VESSEL GRAPH EXTRACTION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 16:44:39,988 - SpawnPoolWorker-1 - INFO -   REGISTERED ATLAS saved at: Results/IXI002-Guys-0828-MRA/IXI002-Guys-0828-T1_registered_atlas.nii.gz
+2026-07-08 16:44:39,989 - SpawnPoolWorker-1 - INFO -   Starting VESSEL GRAPH EXTRACTION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 16:44:40,370 - SpawnPoolWorker-3 - INFO -   REGISTERED ATLAS saved at: Results/IXI015-HH-1258-MRA/IXI015-HH-1258-T1_registered_atlas.nii.gz
+2026-07-08 16:44:40,370 - SpawnPoolWorker-3 - INFO -   Starting VESSEL GRAPH EXTRACTION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 16:46:01,018 - SpawnPoolWorker-2 - INFO -   Vessel graph extracted and saved in: Results/IXI023-Guys-0699-MRA
+2026-07-08 16:46:01,019 - SpawnPoolWorker-2 - INFO -   Starting METRICS COMPUTATION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 16:46:02,405 - SpawnPoolWorker-2 - INFO -   Generating continuous atlas VTP for IXI023-Guys-0699-MRA...
+2026-07-08 16:46:02,971 - SpawnPoolWorker-2 - INFO -   -> Saved continuous labeled VTP: Results/IXI023-Guys-0699-MRA/vessel_graph_labeled_atlas.vtp
+2026-07-08 16:46:03,030 - SpawnPoolWorker-2 - INFO -   Metrics computed and saved in: Results/IXI023-Guys-0699-MRA
+2026-07-08 16:46:03,030 - SpawnPoolWorker-2 - INFO - Successfully completed processing: IXI023-Guys-0699-MRA.nii.gz
+2026-07-08 16:46:26,955 - SpawnPoolWorker-1 - INFO -   Vessel graph extracted and saved in: Results/IXI002-Guys-0828-MRA
+2026-07-08 16:46:26,956 - SpawnPoolWorker-1 - INFO -   Starting METRICS COMPUTATION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 16:46:28,056 - SpawnPoolWorker-1 - INFO -   Generating continuous atlas VTP for IXI002-Guys-0828-MRA...
+2026-07-08 16:46:28,637 - SpawnPoolWorker-1 - INFO -   -> Saved continuous labeled VTP: Results/IXI002-Guys-0828-MRA/vessel_graph_labeled_atlas.vtp
+2026-07-08 16:46:28,690 - SpawnPoolWorker-1 - INFO -   Metrics computed and saved in: Results/IXI002-Guys-0828-MRA
+2026-07-08 16:46:28,690 - SpawnPoolWorker-1 - INFO - Successfully completed processing: IXI002-Guys-0828-MRA.nii.gz
+2026-07-08 16:46:57,980 - SpawnPoolWorker-3 - INFO -   Vessel graph extracted and saved in: Results/IXI015-HH-1258-MRA
+2026-07-08 16:46:57,980 - SpawnPoolWorker-3 - INFO -   Starting METRICS COMPUTATION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 16:46:59,442 - SpawnPoolWorker-3 - INFO -   Generating continuous atlas VTP for IXI015-HH-1258-MRA...
+2026-07-08 16:47:00,087 - SpawnPoolWorker-3 - INFO -   -> Saved continuous labeled VTP: Results/IXI015-HH-1258-MRA/vessel_graph_labeled_atlas.vtp
+2026-07-08 16:47:00,215 - SpawnPoolWorker-3 - INFO -   Metrics computed and saved in: Results/IXI015-HH-1258-MRA
+2026-07-08 16:47:00,215 - SpawnPoolWorker-3 - INFO - Successfully completed processing: IXI015-HH-1258-MRA.nii.gz
+2026-07-08 16:47:00,243 - MainProcess - INFO - 
+============================================================
+2026-07-08 16:47:00,243 - MainProcess - INFO - PROCESSING SUMMARY:
+2026-07-08 16:47:00,243 - MainProcess - INFO - ============================================================
+2026-07-08 16:47:00,243 - MainProcess - INFO - Successfully completed: 3/3
+2026-07-08 16:47:00,243 - MainProcess - INFO - Failed: 0/3
+2026-07-08 16:47:00,243 - MainProcess - INFO - Success rate: 100.0%
+2026-07-08 16:47:00,243 - MainProcess - INFO - 
+All results saved in: /Users/alessandrobenvenuti/Desktop/Università/Thesis/CaravelMetrics/CaravelMetrics/Results
+2026-07-08 16:47:00,243 - MainProcess - INFO - Log file: processing.log

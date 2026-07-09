@@ -26,7 +26,7 @@ def atlas_registration(
     t1_name = os.path.basename(image_t1).split('.')[0]
     
     # 0. ROBUST FOV (NECK CROP)
-    print(f"  [DEBUG 0/7] ROBUSTFOV: Removing neck tissue...")
+    logger.debug(f"  [DEBUG 0/6] ROBUSTFOV: Removing neck tissue...")
     t1_fov = os.path.join(output_dir, f"{t1_name}_cropped_fov.nii.gz")
     rfov = fsl.RobustFOV(in_file=image_t1, out_roi=t1_fov, brainsize=180)
     rfov.run()

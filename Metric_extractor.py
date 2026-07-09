@@ -328,41 +328,68 @@ def extract_segments_from_component_using_shortest_path(G_comp, distance_map):
     return segment_lists, segment_counts_list
 
 
-def save_region_graphs(G, node_radius_map, region_nodes, output_folder, label_map, patient_name=None):
-    """Save one graph package and VTP per atlas region."""
-    if patient_name is None:
-        patient_name = os.path.basename(os.path.normpath(output_folder))
-    regions_dir = os.path.join(output_folder, f"{patient_name}_regional_graphs")
+def save_labeled_atlas_graph(G, node_radius_map, aligned_atlas, output_folder, label_map, patient_name):
+    """
+    Saves the ENTIRE graph as one PKL and one VTP, with regions stored as attributes.
+    This prevents holes and makes the graph atlas-ready.
+    """
+    regions_dir = os.path.join(output_folder, f"{patient_name}_atlas_output")
     os.makedirs(regions_dir, exist_ok=True)
 
-    for r_id, nodes in region_nodes.items():
-        region_id = int(np.round(float(r_id)))
-        region_name = label_map.get(region_id, f"region_{region_id}")
-        safe_region_name = region_name.replace(' ', '_').replace('/', '_')
-        base_name = f"{patient_name}_{safe_region_name}"
+    # 1. Label every node in the original graph
+    for n in G.nodes():
+        pos = G.nodes[n]['pos']
+        try:
+            idx = aligned_atlas.TransformPhysicalPointToIndex(pos)
+            # Store the region ID directly in the node
+            G.nodes[n]['region_id'] = int(aligned_atlas[idx])
+        except:
+            G.nodes[n]['region_id'] = 0
 
-        sub_G = G.subgraph(nodes).copy()
-        pkl_path = os.path.join(regions_dir, f"{base_name}.pkl")
-        region_package = {
-            'graph': sub_G,
-            'node_radius_map': {n: node_radius_map[n] for n in sub_G.nodes()},
-            'region_id': region_id,
-            'region_name': region_name
-        }
-        with open(pkl_path, 'wb') as f:
-            pickle.dump(region_package, f)
-        logger.debug(f"  -> Saved regional graph package: {pkl_path}")
+    # 2. Label every edge based on its midpoint and prepare VTP
+    s_pts = []
+    e_pts = []
+    edge_regions = []
+    
+    for u, v in G.edges():
+        p1 = np.array(G.nodes[u]['pos'])
+        p2 = np.array(G.nodes[v]['pos'])
+        midpoint = (p1 + p2) / 2.0
+        
+        try:
+            idx = aligned_atlas.TransformPhysicalPointToIndex(midpoint.tolist())
+            rid = int(aligned_atlas[idx])
+        except:
+            rid = 0
+            
+        # Store label in the edge attribute
+        G[u][v]['region_id'] = rid
+        
+        # Prepare VTP data
+        s_pts.append(p1)
+        e_pts.append(p2)
+        edge_regions.append(rid)
 
-        if sub_G.number_of_edges() > 0:
-            s_pts = [sub_G.nodes[u]['pos'] for u, v in sub_G.edges()]
-            e_pts = [sub_G.nodes[v]['pos'] for u, v in sub_G.edges()]
-            region_vtp_path = os.path.join(regions_dir, f"{base_name}.vtp")
-            try:
-                region_lines = vedo.Lines(s_pts, e_pts).c('red').lw(3)
-                region_lines.write(region_vtp_path)
-                logger.debug(f"  -> Saved regional VTP: {region_vtp_path}")
-            except Exception as e:
-                logger.warning(f"  WARNING: failed to save regional VTP for region {region_id}: {e}")
+    # 3. Save the Labeled PKL (This is your Atlas file)
+    pkl_path = os.path.join(regions_dir, f"{patient_name}_labeled_atlas.pkl")
+    package = {
+        'graph': G,
+        'node_radius_map': node_radius_map,
+        'label_map': label_map
+    }
+    with open(pkl_path, 'wb') as f:
+        pickle.dump(package, f)
+    logger.info(f"  -> Saved master atlas graph: {pkl_path}")
+
+    # 4. Save the Labeled VTP (For 3D visualization without holes)
+    if s_pts:
+        vtp_path = os.path.join(regions_dir, f"{patient_name}_labeled_atlas.vtp")
+        lines = vedo.Lines(s_pts, e_pts).lw(3)
+        # We add the RegionID to the 'CellData' (edges)
+        lines.celldata["RegionID"] = np.array(edge_regions, dtype=np.int32)
+        lines.dataset.GetCellData().SetActiveScalars("RegionID")
+        lines.write(vtp_path)
+        logger.info(f"  -> Saved atlas VTP: {vtp_path}")
 
 
 def save_results(results, output_folder, save_segment_masks, save_conn_comp_masks, label_map=None):
@@ -652,11 +679,10 @@ def compute_metrics_for_mask(G, node_radius_map, selected_metrics, save_segment_
 
 def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metrics, label_map_path, registered_atlas_path=None, save_segment_masks=None, save_conn_comp_masks=None):
     """
-    Main processing function with atlas registration and metric computation.
+    Main processing function. 
+    METRICS LOGIC: Kept original (node-based subgraphs).
+    SUBGRAPH EXTRACTION: Improved (continuous labeling for atlas).
     """
-    # ============================================================================
-    # 6. Compute the vessel metrics
-    # ============================================================================
     use_atlas = True if registered_atlas_path else False
     results = {'region_metrics': {}} if use_atlas else {}
     
@@ -691,7 +717,7 @@ def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metric
     # Atlas-based regional analysis
     # ============================================================================
     if use_atlas:
-        # Map Nodes to Regions
+        # --- OLD LOGIC FOR METRICS (Nodes to Regions) ---
         region_nodes = {}
         size = aligned_atlas.GetSize()
         for n in G.nodes():
@@ -704,76 +730,65 @@ def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metric
                         if region_id not in region_nodes: region_nodes[region_id] = []
                         region_nodes[region_id].append(n)
             except:
-                # Raise error if index transformation fails
                 raise ValueError(f"Failed to transform point {pos} to index in atlas.")
             
+        # --- OLD LOGIC FOR METRICS (Looping through subgraphs) ---
         for r_id in sorted(region_nodes.keys()):
-            r_name = label_map.get(r_id, f"{r_id}")
-            # logger.debug(f"  Computing metrics for region {r_id} with {len(region_nodes[r_id])} nodes")
             sub_G = G.subgraph(region_nodes[r_id]).copy()
-            
             region_result = compute_metrics_for_mask(
-                sub_G, node_radius_map,selected_metrics, save_segment_masks=None, save_conn_comp_masks=None
+                sub_G, node_radius_map, selected_metrics, 
+                save_segment_masks=None, save_conn_comp_masks=None
             )
             results['region_metrics'][int(r_id)] = region_result
         
+        # Save results (CSV files)
         save_results(results, output_folder, save_segment_masks, save_conn_comp_masks, label_map)
     
-        # Saving regional VTP
-        n_regions = len(region_nodes)
-        logger.debug(f"  Found {n_regions} regions. Generating regional VTP for {patient_name}...")
-        regional_actors = []
+        # ========================================================================
+        # IMPROVED SUBGRAPH EXTRACTION (For Atlas / No Holes)
+        # ========================================================================
+        logger.info(f"  Generating continuous atlas VTP for {patient_name}...")
+        s_pts = []
+        e_pts = []
+        edge_region_ids = []
         
-        # Create directory for individual region VTPs
-        regions_vtp_dir = os.path.join(output_folder, "regional_vtps")
-        os.makedirs(regions_vtp_dir, exist_ok=True)
-        
-        for r_id, nodes in region_nodes.items():
-            sub_G = G.subgraph(nodes)
+        for u, v in G.edges():
+            p1 = np.array(G.nodes[u]['pos'])
+            p2 = np.array(G.nodes[v]['pos'])
+            # Use midpoint to determine the region for the whole edge segment
+            midpoint = (p1 + p2) / 2.0
+            try:
+                idx = aligned_atlas.TransformPhysicalPointToIndex(midpoint.tolist())
+                rid = int(aligned_atlas[idx])
+            except:
+                rid = 0
             
-            # Extract edges within this region
-            s_pts = [sub_G.nodes[u]['pos'] for u, v in sub_G.edges()]
-            e_pts = [sub_G.nodes[v]['pos'] for u, v in sub_G.edges()]
+            # Store RegionID in the graph object for the Atlas PKL
+            G[u][v]['region_id'] = rid
             
-            if s_pts:
-                # Create the lines
-                region_lines = vedo.Lines(s_pts, e_pts).lw(3)
-                
-                # Create an array of the Region ID for every cell (edge)
-                n_cells = region_lines.dataset.GetNumberOfCells()
-                visual_id = (int(r_id) * 137) % 256  # Simple color hash
-                region_array = np.full(n_cells, visual_id, dtype=np.int32)
-                
-                # Add this array to the cell data so Slicer can map colors to IDs
-                region_lines.celldata["RegionID"] = region_array
-                regional_actors.append(region_lines)
-                
-                # Save individual region VTP
-                region_name = label_map.get(r_id, f"region_{r_id}")
-                individual_vtp_path = os.path.join(regions_vtp_dir, f"{region_name}.vtp")
-                region_lines.dataset.GetCellData().SetActiveScalars("RegionID")
-                region_lines.write(individual_vtp_path)
-                logger.debug(f"  -> Saved individual VTP for region {r_id} ({region_name}): {individual_vtp_path}")
+            s_pts.append(p1)
+            e_pts.append(p2)
+            edge_region_ids.append(rid)
 
-        if regional_actors:
-            # Merge all regional line sets into one object
-            combined_vtp = vedo.merge(regional_actors)
-            regional_vtp_path = os.path.join(output_folder, "vessel_graph_regional.vtp")
-            
-            # Explicitly set RegionID as the active scalar for Slicer to read
+        # Save single labeled VTP (Plotting script uses this)
+        if s_pts:
+            atlas_vtp_path = os.path.join(output_folder, "vessel_graph_labeled_atlas.vtp")
+            combined_vtp = vedo.Lines(s_pts, e_pts).lw(3)
+            combined_vtp.celldata["RegionID"] = np.array(edge_region_ids, dtype=np.int32)
             combined_vtp.dataset.GetCellData().SetActiveScalars("RegionID")
-            combined_vtp.write(regional_vtp_path)
-            logger.debug(f"  -> Saved combined VTP with {n_regions} regions to: {regional_vtp_path}")
+            combined_vtp.write(atlas_vtp_path)
+            logger.info(f"  -> Saved continuous labeled VTP: {atlas_vtp_path}")
 
-        save_region_graphs(G, node_radius_map, region_nodes, output_folder, label_map, patient_name=patient_name)
-    
+        # Save the labeled graph (Master Atlas PKL)
+        atlas_pkl_path = os.path.join(output_folder, f"{patient_name}_labeled_atlas.pkl")
+        with open(atlas_pkl_path, 'wb') as f:
+            pickle.dump({'graph': G, 'node_radius_map': node_radius_map, 'label_map': label_map}, f)
+
     # ============================================================================    
-    # NOT using atlas
+    # NOT using atlas (Global mode)
     # ============================================================================    
     else:
         logger.debug("  Computing global vessel metrics...")
-        
-        # Create a Results_GLOBAL folder
         parent, child = os.path.split(output_folder.rstrip('/'))
         output_folder = os.path.join(parent + "_GLOBAL", child)
         Path(output_folder).mkdir(parents=True, exist_ok=True)
