@@ -1,28 +1,27 @@
 '''
 To run this script:
 
-1) To see everything together (colored by atlas region):
+1) To see the new MNI-aligned atlas graph (colored by atlas region):
     python3 plot_brain_graphs.py --folder Results/IXI002-Guys-0828-MRA
 
-2) To see a specific region (e.g., Region 12):
+2) To see a specific region (e.g., Region 12) from the MNI atlas:
     python3 plot_brain_graphs.py --folder Results/IXI002-Guys-0828-MRA --region 12
 
-3) To see the vessels inside the original MRA "ghost" (Transparency):
-    python3 plot_brain_graphs.py --folder Results/IXI002-Guys-0828-MRA --mra IXI/MRA/IXI002-Guys-0828-MRA.nii.gz
+3) To see the MNI vessels inside the MNI Template "ghost" (Transparency):
+    # Note: Because the new graphs are in MNI space, you must overlay them on the MNI template!
+    python3 plot_brain_graphs.py --folder Results/IXI002-Guys-0828-MRA --volume Atlas/Atlas_182_MNI152/MNI152_T1_1mm_Brain.nii.gz
 
-4) To see a specific VTP file directly:
-    python3 plot_brain_graphs.py --vtp Results/IXI002-Guys-0828-MRA/vessel_graph.vtp
-
-5) To see a direct VTP inside the original MRA "ghost":
-    python3 plot_brain_graphs.py --vtp Results/IXI002-Guys-0828-MRA/vessel_graph.vtp --mra IXI/MRA/IXI002-Guys-0828-MRA.nii.gz
+4) To see the OLD NATIVE vessels inside the original native MRA "ghost":
+    python3 plot_brain_graphs.py --vtp Results/IXI002-Guys-0828-MRA/vessel_graph.vtp --volume IXI/MRA/IXI002-Guys-0828-MRA.nii.gz
 '''
 import os
+import glob
 import vedo
 import argparse
 import numpy as np
 import nibabel as nib
 
-# The flip matrix from the original paper/code
+# The flip matrix to map NIfTI (RAS) space to Slicer/Graph (LPS) space
 SLICER_MATRIX = np.array([
     [-1.0, 0.0, 0.0, 0.0],
     [0.0, -1.0, 0.0, 0.0],
@@ -30,18 +29,22 @@ SLICER_MATRIX = np.array([
     [0.0, 0.0, 0.0, 1.0]
 ])
 
-def visualize_vessels(case_folder=None, vtp_path=None, region_id=None, show_volume=False, mra_path=None):
+def visualize_vessels(case_folder=None, vtp_path=None, region_id=None, show_volume=False, volume_path=None):
     plt = vedo.Plotter(title="Vessel Atlas Visualization", bg="blackboard")
     actors = []
 
     # 1. Handle Volume Overlay
-    if show_volume and mra_path and os.path.exists(mra_path):
-        print(f"Loading and Aligning Volume: {mra_path}")
-        nii = nib.load(mra_path)
+    if show_volume and volume_path and os.path.exists(volume_path):
+        print(f"Loading and Aligning Volume: {volume_path}")
+        nii = nib.load(volume_path)
         vol = vedo.Volume(nii.get_fdata())
+        
+        # Apply standard NIfTI affine, then flip to LPS space to match the graph coordinates
         vol.apply_transform(nii.affine.tolist())     
         vol.apply_transform(SLICER_MATRIX.tolist())  
-        vol.mode(0).alpha([0, 0.1, 0.15]) # Lower alpha to see vessels better
+        
+        # Lower alpha to see vessels better through the tissue
+        vol.mode(1).alpha([0, 0.1, 0.15]) 
         actors.append(vol)
 
     # 2. Case A: User provided a direct path to a VTP file
@@ -61,10 +64,17 @@ def visualize_vessels(case_folder=None, vtp_path=None, region_id=None, show_volu
 
     # 3. Case B: User provided a results folder (New Atlas Mode)
     elif case_folder:
-        atlas_vtp = os.path.join(case_folder, "vessel_graph_labeled_atlas.vtp")
+        # First, try to find the new MNI-aligned VTP (dynamically named)
+        atlas_vtp = None
+        mni_vtps = glob.glob(os.path.join(case_folder, "*_vessel_graph_labeled_MNI.vtp"))
         
-        if not os.path.exists(atlas_vtp):
-            atlas_vtp = os.path.join(case_folder, "vessel_graph.vtp")
+        if mni_vtps:
+            atlas_vtp = mni_vtps[0] # Grab the first one found
+        else:
+            # Fallbacks for older versions of the pipeline
+            atlas_vtp = os.path.join(case_folder, "vessel_graph_labeled_atlas.vtp")
+            if not os.path.exists(atlas_vtp):
+                atlas_vtp = os.path.join(case_folder, "vessel_graph.vtp")
 
         if os.path.exists(atlas_vtp):
             print(f"Loading Atlas Graph: {atlas_vtp}")
@@ -111,13 +121,16 @@ if __name__ == "__main__":
     parser.add_argument('--folder', help="Path to the patient's result folder")
     parser.add_argument('--vtp', help="Direct path to a specific .vtp file")
     parser.add_argument('--region', type=int, default=None, help="Specific Region ID to extract from the global graph")
-    parser.add_argument('--mra', help="Optional path to original MRA .nii.gz for overlay")
+    
+    # Changed from --mra to --volume, with an alias to preserve backward compatibility
+    parser.add_argument('--volume', '--mra', dest='volume', help="Optional path to NIfTI volume (use MNI Template for MNI graphs, original MRA for native graphs) for overlay")
+    
     args = parser.parse_args()
 
     visualize_vessels(
         case_folder=args.folder,
         vtp_path=args.vtp,
         region_id=args.region, 
-        show_volume=True if args.mra else False, 
-        mra_path=args.mra
+        show_volume=True if args.volume else False, 
+        volume_path=args.volume
     )

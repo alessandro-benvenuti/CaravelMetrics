@@ -18,6 +18,8 @@ import sys
 import traceback
 import logging
 import zipfile
+import shutil
+import glob
 from pathlib import Path
 from tqdm import tqdm
 from multiprocessing import Pool, cpu_count, Manager
@@ -156,11 +158,13 @@ def process_single_file(fname, image_folder, t1_image_folder, segmentation_folde
                 raise FileNotFoundError(f"T1 image file not found: {t1_image_path}")
 
             registered_atlas_path = os.path.join(output_folder, f"{t1_patient_name}_registered_atlas.nii.gz")
+            mra_to_mni_mat = os.path.join(output_folder, "mra_to_mni.mat")
+
             if skip_existing and os.path.exists(registered_atlas_path):
                 logger.info(f"  Skipped ATLAS REGISTRATION: {fname} (output already exists)")
             else:
                 logger.info(f"  Starting ATLAS REGISTRATION for: {fname}")
-                process_registration(image_path, t1_image_path, mask_path, atlas_path, output_folder)
+                registered_atlas_path, mra_to_mni_mat = process_registration(image_path, t1_image_path, mask_path, atlas_path, output_folder)
                 logger.info(f"  REGISTERED ATLAS saved at: {registered_atlas_path}")
     
     
@@ -196,7 +200,10 @@ def process_single_file(fname, image_folder, t1_image_folder, segmentation_folde
                 label_map_path,
                 registered_atlas_path=registered_atlas_path if use_atlas else None,
                 save_segment_masks=None,
-                save_conn_comp_masks=None
+                save_conn_comp_masks=None,
+                image_path=image_path if use_atlas else None,              
+                mni_template_path=mni_template_path if use_atlas else None,
+                mra_to_mni_mat=mra_to_mni_mat if use_atlas else None       
             )
             logger.info(f"  Metrics computed and saved in: {output_folder}")
         
@@ -353,6 +360,43 @@ def main():
         for failure in failed_results:
             logger.error(f"  - {failure['file']}: {failure['error']}")
         logger.error(f"\nCheck processing.log for detailed error information")
+
+    # File aggregation step (copying graph files to a central 'graphs' directory)
+    logger.info("\n" + "="*60)
+    logger.info("AGGREGATING GRAPH FILES FOR ATLAS...")
+    logger.info("="*60)
+    
+    graphs_dir = os.path.join(output_base_folder_arg, "graphs")
+    os.makedirs(graphs_dir, exist_ok=True)
+    
+    # Loop through all items in the Results folder
+    for item in os.listdir(output_base_folder_arg):
+        patient_folder = os.path.join(output_base_folder_arg, item)
+        
+        # Skip files, the new 'graphs' directory, and the 'GLOBAL' fallback directory
+        if not os.path.isdir(patient_folder) or item == "graphs" or item.endswith("_GLOBAL"):
+            continue
+            
+        # Define the target directory for this specific patient
+        target_patient_dir = os.path.join(graphs_dir, item)
+        
+        # Look for the required files (MNI VTP, MNI PKL, and JSON)
+        json_files = glob.glob(os.path.join(patient_folder, "*_branches_for_atlas.json"))
+        vtp_files = glob.glob(os.path.join(patient_folder, "*_MNI.vtp"))
+        pkl_files = glob.glob(os.path.join(patient_folder, "*_MNI.pkl"))
+        
+        # Fallbacks in case you ran without atlas mode
+        if not vtp_files: vtp_files = glob.glob(os.path.join(patient_folder, "*vessel_graph*.vtp"))
+        if not pkl_files: pkl_files = glob.glob(os.path.join(patient_folder, "*labeled_atlas*.pkl")) or glob.glob(os.path.join(patient_folder, "vessel_data.pkl"))
+
+        # If we found graph files for this patient, copy them over
+        if vtp_files or pkl_files or json_files:
+            os.makedirs(target_patient_dir, exist_ok=True)
+            
+            for f in json_files + vtp_files + pkl_files:
+                shutil.copy2(f, target_patient_dir)
+                
+    logger.info(f"Aggregated graph files successfully saved to: {os.path.abspath(graphs_dir)}")
     
     logger.info(f"\nAll results saved in: {os.path.abspath(output_base_folder_arg)}")
     logger.info(f"Log file: processing.log")

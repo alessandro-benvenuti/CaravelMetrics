@@ -50,6 +50,74 @@ def load_label_map(txt_path):
                 labels[int(parts[0])] = " ".join(parts[1:])
     return labels
 
+def get_fsl_to_lps_matrix(src_img_path, ref_img_path, fsl_mat_path):
+    """ Converts an FSL FLIRT matrix into a physical LPS-to-LPS transformation matrix. """
+    src = nib.load(src_img_path)
+    ref = nib.load(ref_img_path)
+    fsl_mat = np.loadtxt(fsl_mat_path)
+    
+    def get_fsl_sform(img):
+        # FSL scales voxels. Flips X if determinant is positive (radiological).
+        dx, dy, dz = img.header.get_zooms()[:3]
+        nx = img.shape[0]
+        det = np.linalg.det(img.affine)
+        S = np.diag([dx, dy, dz, 1.0])
+        if det > 0:
+            S[0, 0] = -dx
+            S[0, 3] = (nx - 1) * dx
+        return S
+    
+    S_src = get_fsl_sform(src)
+    S_ref = get_fsl_sform(ref)
+    M_src = src.affine
+    M_ref = ref.affine
+    
+    # Standard transformation: Native Physical(RAS) -> MNI Physical(RAS)
+    transform_ras = M_ref @ np.linalg.inv(S_ref) @ fsl_mat @ S_src @ np.linalg.inv(M_src)
+    
+    # Since our points are in LPS (due to Slicer matrix), we need to wrap the transform
+    lps_to_ras = np.diag([-1, -1, 1, 1])
+    transform_lps = np.linalg.inv(lps_to_ras) @ transform_ras @ lps_to_ras
+    return transform_lps
+
+def extract_and_save_branches_to_json(G, output_folder, patient_name, label_map):
+    """ Breaks the MNI graph into contiguous topological branches and saves as JSON. """
+    G_temp = G.copy()
+    # Remove bifurcations to shatter graph into simple isolated branches
+    bifurcations = [n for n, d in G.degree() if d >= 3]
+    G_temp.remove_nodes_from(bifurcations)
+    
+    branch_dict = {}
+    import json
+    
+    for comp in nx.connected_components(G_temp):
+        sub_path = G_temp.subgraph(comp)
+        endpoints = [n for n, d in sub_path.degree() if d == 1]
+        if not endpoints:
+            endpoints = [list(sub_path.nodes())[0]] # Edge case: perfect loop
+            
+        try:
+            ordered_nodes = nx.shortest_path(sub_path, source=endpoints[0], target=endpoints[-1])
+        except:
+            ordered_nodes = list(sub_path.nodes())
+            
+        branch_coords = [G.nodes[n]['pos'].tolist() for n in ordered_nodes]
+        
+        # Determine the dominant region for this branch segment
+        regions = [G.nodes[n].get('region_id', 0) for n in ordered_nodes]
+        dominant_region = max(set(regions), key=regions.count) if regions else 0
+        region_name = label_map.get(dominant_region, f"Region_{dominant_region}")
+        
+        if region_name not in branch_dict:
+            branch_dict[region_name] = []
+        branch_dict[region_name].append(branch_coords)
+
+    json_path = os.path.join(output_folder, f"{patient_name}_branches_for_atlas.json")
+    with open(json_path, 'w') as f:
+        json.dump(branch_dict, f, indent=4)
+    logger.info(f"  -> Saved topological branches to JSON: {json_path}")
+
+
 def compute_tortuosity_metrics(points, smoothing=0, n_samples=500, counts=None):
     """
     Compute tortuosity metrics for a 3D curve defined by 'points' using a cubic B-spline.
@@ -677,7 +745,19 @@ def compute_metrics_for_mask(G, node_radius_map, selected_metrics, save_segment_
 
     return results
 
-def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metrics, label_map_path, registered_atlas_path=None, save_segment_masks=None, save_conn_comp_masks=None):
+# Replace old definition with this:
+def extract_metrics(patient_name,
+                    output_folder,
+                    graph_pkl_path,
+                    selected_metrics,
+                    label_map_path, 
+                    registered_atlas_path=None, 
+                    save_segment_masks=None,
+                    save_conn_comp_masks=None,
+                    image_path=None,
+                    mni_template_path=None,
+                    mra_to_mni_mat=None
+                ):
     """
     Main processing function. 
     METRICS LOGIC: Kept original (node-based subgraphs).
@@ -745,17 +825,15 @@ def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metric
         save_results(results, output_folder, save_segment_masks, save_conn_comp_masks, label_map)
     
         # ========================================================================
-        # IMPROVED SUBGRAPH EXTRACTION (For Atlas / No Holes)
+        # IMPROVED SUBGRAPH EXTRACTION (For Atlas / No Holes / MNI Space Mapping)
         # ========================================================================
-        logger.info(f"  Generating continuous atlas VTP for {patient_name}...")
-        s_pts = []
-        e_pts = []
-        edge_region_ids = []
+        logger.info(f"  Transforming graph to MNI space and generating Atlas files for {patient_name}...")
         
+        # 1. First, label regions using Native coordinates BEFORE transforming
+        edge_region_ids = []
         for u, v in G.edges():
             p1 = np.array(G.nodes[u]['pos'])
             p2 = np.array(G.nodes[v]['pos'])
-            # Use midpoint to determine the region for the whole edge segment
             midpoint = (p1 + p2) / 2.0
             try:
                 idx = aligned_atlas.TransformPhysicalPointToIndex(midpoint.tolist())
@@ -763,26 +841,43 @@ def extract_metrics(patient_name, output_folder, graph_pkl_path, selected_metric
             except:
                 rid = 0
             
-            # Store RegionID in the graph object for the Atlas PKL
             G[u][v]['region_id'] = rid
-            
-            s_pts.append(p1)
-            e_pts.append(p2)
+            # Also store node regions for the JSON branch extractor later
+            G.nodes[u]['region_id'] = rid
+            G.nodes[v]['region_id'] = rid
             edge_region_ids.append(rid)
 
-        # Save single labeled VTP (Plotting script uses this)
+        # 2. Transform the graph coordinates from Native MRA to Standard MNI
+        if image_path and mni_template_path and mra_to_mni_mat:
+            lps_transform = get_fsl_to_lps_matrix(image_path, mni_template_path, mra_to_mni_mat)
+            
+            # Apply transformation to every node
+            for n in G.nodes():
+                pos = G.nodes[n]['pos']
+                pos_homogeneous = np.array([pos[0], pos[1], pos[2], 1.0])
+                mni_pos = lps_transform @ pos_homogeneous
+                G.nodes[n]['pos'] = mni_pos[:3]
+
+        # 3. Prepare the MNI-space points for the VTP
+        s_pts = [np.array(G.nodes[u]['pos']) for u, v in G.edges()]
+        e_pts = [np.array(G.nodes[v]['pos']) for u, v in G.edges()]
+
+        # 4. Save single labeled VTP in MNI space
         if s_pts:
-            atlas_vtp_path = os.path.join(output_folder, "vessel_graph_labeled_atlas.vtp")
+            atlas_vtp_path = os.path.join(output_folder, f"{patient_name}_vessel_graph_labeled_MNI.vtp")
             combined_vtp = vedo.Lines(s_pts, e_pts).lw(3)
             combined_vtp.celldata["RegionID"] = np.array(edge_region_ids, dtype=np.int32)
             combined_vtp.dataset.GetCellData().SetActiveScalars("RegionID")
             combined_vtp.write(atlas_vtp_path)
-            logger.info(f"  -> Saved continuous labeled VTP: {atlas_vtp_path}")
+            logger.info(f"  -> Saved continuous MNI labeled VTP: {atlas_vtp_path}")
 
-        # Save the labeled graph (Master Atlas PKL)
-        atlas_pkl_path = os.path.join(output_folder, f"{patient_name}_labeled_atlas.pkl")
+        # 5. Save the labeled graph (Master Atlas PKL) in MNI space
+        atlas_pkl_path = os.path.join(output_folder, f"{patient_name}_labeled_atlas_MNI.pkl")
         with open(atlas_pkl_path, 'wb') as f:
             pickle.dump({'graph': G, 'node_radius_map': node_radius_map, 'label_map': label_map}, f)
+
+        # 6. Extract sequential branches and save to JSON for geometric averaging
+        extract_and_save_branches_to_json(G, output_folder, patient_name, label_map)
 
     # ============================================================================    
     # NOT using atlas (Global mode)

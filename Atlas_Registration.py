@@ -83,6 +83,15 @@ def atlas_registration(
     concat.inputs.out_file = combined_mat
     concat.run()
 
+    # 5.5 CREATE INVERSE MATRIX (MRA -> MNI) -> It will be used to map the graph back to standard space (used for the subgraph extraction)
+    logger.debug(f"  [DEBUG 5.5/6] CONVERT_XFM: Inverting combined matrix (MRA -> MNI)...")
+    mra_to_mni_mat = os.path.join(output_dir, "mra_to_mni.mat")
+    inv_xfm = fsl.ConvertXFM()
+    inv_xfm.inputs.in_file = combined_mat
+    inv_xfm.inputs.invert_xfm = True
+    inv_xfm.inputs.out_file = mra_to_mni_mat
+    inv_xfm.run()
+
     # 6. FINAL WARP: ATLAS -> MRA
     logger.debug(f"  [DEBUG 6/6] APPLYXFM: Warping Atlas labels to MRA space...")
     reg_atlas_path = os.path.join(output_dir, f"{t1_name}_registered_atlas.nii.gz")
@@ -95,7 +104,7 @@ def atlas_registration(
     apply_xfm.inputs.out_file = reg_atlas_path
     apply_xfm.run()
 
-    return reg_atlas_path
+    return reg_atlas_path, mra_to_mni_mat
 
 def process_registration(image_path, image_t1_path, mask_path, atlas_path, output_dir, mni_template_path=None):
     # If no path was provided via CLI, use the default hardcoded guessing logic
@@ -112,4 +121,4 @@ def process_registration(image_path, image_t1_path, mask_path, atlas_path, outpu
         raise FileNotFoundError(f"MNI Template not found at: {mni_template_path}")
 
     # Pass the confirmed path to the registration function
-    atlas_registration(atlas_path, mni_template_path, image_path, image_t1_path, output_dir)
+    return atlas_registration(atlas_path, mni_template_path, image_path, image_t1_path, output_dir)
