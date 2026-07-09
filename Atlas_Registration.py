@@ -34,7 +34,7 @@ def atlas_registration(
     # 1. BRAIN EXTRACTION
     logger.debug(f"  [DEBUG 1/6] BET: Extracting brain...")
     t1_brain = os.path.join(output_dir, f"{t1_name}_BETted_brain.nii.gz")
-    bet = fsl.BET(in_file=t1_fov, out_file=t1_brain, mask=True, frac=0.4)
+    bet = fsl.BET(in_file=t1_fov, out_file=t1_brain, mask=True, frac=0.4, robust=True)
     bet.run()
 
     # 2. REORIENT TO STANDARD
