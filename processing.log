@@ -1649,3 +1649,28 @@ All results saved in: /Users/alessandrobenvenuti/Desktop/Università/Thesis/Car
 2026-07-09 15:49:35,125 - MainProcess - INFO - 
 All results saved in: /Users/alessandrobenvenuti/Desktop/Università/Thesis/CaravelMetrics/CaravelMetrics/Results
 2026-07-09 15:49:35,126 - MainProcess - INFO - Log file: processing.log
+2026-07-09 16:12:43,083 - MainProcess - INFO - Found 3 files to process
+2026-07-09 16:12:43,084 - MainProcess - INFO - Configuration: use_atlas=True, skip_existing=False, run_parallel=True, num_workers=None, chunk_size=1
+2026-07-09 16:12:43,084 - MainProcess - INFO - Using 3 parallel workers (total CPUs: 8)
+2026-07-09 16:12:43,084 - MainProcess - INFO - Chunk size: 1
+2026-07-09 16:12:45,202 - SpawnPoolWorker-1 - INFO - ============================================================
+2026-07-09 16:12:45,202 - SpawnPoolWorker-1 - INFO - Processing file: IXI002-Guys-0828-MRA.nii.gz (OUTPUT: Results/IXI002-Guys-0828-MRA)
+2026-07-09 16:12:45,202 - SpawnPoolWorker-1 - INFO - ============================================================
+2026-07-09 16:12:45,202 - SpawnPoolWorker-1 - INFO -   Starting ATLAS REGISTRATION for: IXI002-Guys-0828-MRA.nii.gz
+2026-07-09 16:12:45,232 - SpawnPoolWorker-3 - INFO - ============================================================
+2026-07-09 16:12:45,232 - SpawnPoolWorker-3 - INFO - Processing file: IXI015-HH-1258-MRA.nii.gz (OUTPUT: Results/IXI015-HH-1258-MRA)
+2026-07-09 16:12:45,232 - SpawnPoolWorker-3 - INFO - ============================================================
+2026-07-09 16:12:45,232 - SpawnPoolWorker-3 - INFO -   Starting ATLAS REGISTRATION for: IXI015-HH-1258-MRA.nii.gz
+2026-07-09 16:12:45,247 - SpawnPoolWorker-2 - INFO - ============================================================
+2026-07-09 16:12:45,247 - SpawnPoolWorker-2 - INFO - Processing file: IXI023-Guys-0699-MRA.nii.gz (OUTPUT: Results/IXI023-Guys-0699-MRA)
+2026-07-09 16:12:45,248 - SpawnPoolWorker-2 - INFO - ============================================================
+2026-07-09 16:12:45,248 - SpawnPoolWorker-2 - INFO -   Starting ATLAS REGISTRATION for: IXI023-Guys-0699-MRA.nii.gz
+2026-07-09 16:12:46,710 - SpawnPoolWorker-2 - INFO - stdout 2026-07-09T16:12:46.710208:Final FOV is: 
+2026-07-09 16:12:46,710 - SpawnPoolWorker-2 - INFO - stdout 2026-07-09T16:12:46.710208:0.000000 256.000000 43.000000 192.000000 0.000000 130.000000 
+2026-07-09 16:12:46,710 - SpawnPoolWorker-2 - INFO - stdout 2026-07-09T16:12:46.710208:
+2026-07-09 16:12:47,056 - SpawnPoolWorker-3 - INFO - stdout 2026-07-09T16:12:47.056367:Final FOV is: 
+2026-07-09 16:12:47,056 - SpawnPoolWorker-3 - INFO - stdout 2026-07-09T16:12:47.056367:0.000000 256.000000 63.000000 192.000000 0.000000 150.000000 
+2026-07-09 16:12:47,056 - SpawnPoolWorker-3 - INFO - stdout 2026-07-09T16:12:47.056367:
+2026-07-09 16:12:47,885 - SpawnPoolWorker-1 - INFO - stdout 2026-07-09T16:12:47.884820:Final FOV is: 
+2026-07-09 16:12:47,885 - SpawnPoolWorker-1 - INFO - stdout 2026-07-09T16:12:47.884820:0.000000 256.000000 49.000000 192.000000 0.000000 150.000000 
+2026-07-09 16:12:47,885 - SpawnPoolWorker-1 - INFO - stdout 2026-07-09T16:12:47.884820:

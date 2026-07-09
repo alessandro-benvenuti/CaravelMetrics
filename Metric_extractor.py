@@ -115,7 +115,7 @@ def extract_and_save_branches_to_json(G, output_folder, patient_name, label_map)
     json_path = os.path.join(output_folder, f"{patient_name}_branches_for_atlas.json")
     with open(json_path, 'w') as f:
         json.dump(branch_dict, f, indent=4)
-    logger.info(f"  -> Saved topological branches to JSON: {json_path}")
+    logger.debug(f"  -> Saved topological branches to JSON: {json_path}")
 
 
 def compute_tortuosity_metrics(points, smoothing=0, n_samples=500, counts=None):
@@ -447,7 +447,7 @@ def save_labeled_atlas_graph(G, node_radius_map, aligned_atlas, output_folder, l
     }
     with open(pkl_path, 'wb') as f:
         pickle.dump(package, f)
-    logger.info(f"  -> Saved master atlas graph: {pkl_path}")
+    logger.debug(f"  -> Saved master atlas graph: {pkl_path}")
 
     # 4. Save the Labeled VTP (For 3D visualization without holes)
     if s_pts:
@@ -457,7 +457,7 @@ def save_labeled_atlas_graph(G, node_radius_map, aligned_atlas, output_folder, l
         lines.celldata["RegionID"] = np.array(edge_regions, dtype=np.int32)
         lines.dataset.GetCellData().SetActiveScalars("RegionID")
         lines.write(vtp_path)
-        logger.info(f"  -> Saved atlas VTP: {vtp_path}")
+        logger.debug(f"  -> Saved atlas VTP: {vtp_path}")
 
 
 def save_results(results, output_folder, save_segment_masks, save_conn_comp_masks, label_map=None):
@@ -827,7 +827,7 @@ def extract_metrics(patient_name,
         # ========================================================================
         # IMPROVED SUBGRAPH EXTRACTION (For Atlas / No Holes / MNI Space Mapping)
         # ========================================================================
-        logger.info(f"  Transforming graph to MNI space and generating Atlas files for {patient_name}...")
+        logger.debug(f"  Transforming graph to MNI space and generating Atlas files for {patient_name}...")
         
         # 1. First, label regions using Native coordinates BEFORE transforming
         edge_region_ids = []
@@ -869,7 +869,7 @@ def extract_metrics(patient_name,
             combined_vtp.celldata["RegionID"] = np.array(edge_region_ids, dtype=np.int32)
             combined_vtp.dataset.GetCellData().SetActiveScalars("RegionID")
             combined_vtp.write(atlas_vtp_path)
-            logger.info(f"  -> Saved continuous MNI labeled VTP: {atlas_vtp_path}")
+            logger.debug(f"  -> Saved continuous MNI labeled VTP: {atlas_vtp_path}")
 
         # 5. Save the labeled graph (Master Atlas PKL) in MNI space
         atlas_pkl_path = os.path.join(output_folder, f"{patient_name}_labeled_atlas_MNI.pkl")
